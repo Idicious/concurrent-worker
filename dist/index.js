@@ -51,7 +51,7 @@
             .join(CONTEXT_DELIMITER);
     };
     var getScript = function (execute, context, options) {
-        return ("\n" + getContextString(context) + "\n\nself." + RUN + " = " + RUN + ";\nself." + TRANSFERRABLE + " = " + TRANSFERRABLE + ";\n\n" + TRANSFERRABLE_DECLARATION + " = " + (options.outTransferable || noopArray) + "\n\n" + RUN_DECLARATION + " = " + execute + "\n  \n" + ONMESSAGE_DECLARATION + " = " + onmessage + "\n").trim();
+        return ("\n" + getContextString(context) + "\n\nself.RUN = '" + RUN + "';\nself.TRANSFERRABLE = '" + TRANSFERRABLE + "';\n\n" + TRANSFERRABLE_DECLARATION + " = " + (options.outTransferable || noopArray) + "\n\n" + RUN_DECLARATION + " = " + execute + "\n  \n" + ONMESSAGE_DECLARATION + " = " + onmessage + "\n").trim();
     };
     var createWorkerUrl = function (execute, context, options) {
         var script = getScript(execute, context, options);
