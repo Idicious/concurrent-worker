@@ -18,6 +18,14 @@
     var TRANSFERRABLE_DECLARATION = "self." + TRANSFERRABLE;
     var ONMESSAGE_DECLARATION = "self.onmessage";
     var CONTEXT_DELIMITER = ";\r\n\r\n";
+    /**
+     * Calling functions through string constants makes sure that aggressive minification
+     * does not break the call. The same applies to the apply call, this ensures no polyfill
+     * is assumed for a rest spread which would also break the worker script.
+     *
+     * Tested with Closure Compiler ADVANCED mode with ES3, ES5 and ES6 target.
+     * @param message
+     */
     var onmessage = function (message) {
         Promise.resolve(self[RUN].apply(null, message.data[1])).then(function (result) {
             var transferrable = self[TRANSFERRABLE](result);
@@ -43,7 +51,7 @@
             .join(CONTEXT_DELIMITER);
     };
     var getScript = function (execute, context, options) {
-        return ("\n" + getContextString(context) + "\n\n" + TRANSFERRABLE_DECLARATION + " = " + (options.outTransferable || noopArray) + "\n\n" + RUN_DECLARATION + " = " + execute + "\n  \n" + ONMESSAGE_DECLARATION + " = " + onmessage + "\n").trim();
+        return ("\n" + getContextString(context) + "\n\nself." + RUN + " = " + RUN + ";\nself." + TRANSFERRABLE + " = " + TRANSFERRABLE + ";\n\n" + TRANSFERRABLE_DECLARATION + " = " + (options.outTransferable || noopArray) + "\n\n" + RUN_DECLARATION + " = " + execute + "\n  \n" + ONMESSAGE_DECLARATION + " = " + onmessage + "\n").trim();
     };
     var createWorkerUrl = function (execute, context, options) {
         var script = getScript(execute, context, options);

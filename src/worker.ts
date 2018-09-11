@@ -63,6 +63,9 @@ const getScript = <T extends Array<unknown>, R>(
   `
 ${getContextString(context)}
 
+self.${RUN} = ${RUN};
+self.${TRANSFERRABLE} = ${TRANSFERRABLE};
+
 ${TRANSFERRABLE_DECLARATION} = ${options.outTransferable || noopArray}
 
 ${RUN_DECLARATION} = ${execute}
