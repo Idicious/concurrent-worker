@@ -62,10 +62,6 @@ const worker = sync(run, {
   [add.name]: add,
   constNumber
 });
-
-worker.run(1, 2).then(result => {
-  console.log(result); // 1 + 2 + 5 = 8
-});
 ```
 
 ## Transferrables
@@ -90,8 +86,4 @@ const worker = sync(
     outTransferable: returnVal => [returnVal.buffer]
   }
 );
-
-worker.run(1, 2).then(result => {
-  console.log(result); // 3
-});
 ```
