@@ -9,6 +9,10 @@
   "scripts": {
     "build": "tsc && rollup -c"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/idicious/concurrent-worker.git"
+  },
   "devDependencies": {
     "rollup": "^0.63.5",
     "rollup-plugin-typescript": "^0.8.1",

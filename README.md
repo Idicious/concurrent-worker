@@ -43,3 +43,55 @@ const runAsyncTasks = async () => {
   console.log(final); // 225
 };
 ```
+
+## Context
+
+When creating a worker you can pass in a context, all context objects can be used inside the run function. The key on the context object is the global property name in the worker.
+
+**Important Note**
+Minification and renaming can break context functionality, when minifying use function.name as key on the context object, webpack in dev mode breaks the context.
+
+```js
+import { sync } from "concurrent-worker";
+
+const constNumber = 5;
+const add = (x, y) => x + y + constNumber;
+const run = (x, y) => add(x, y);
+
+const worker = sync(run, {
+  [add.name]: add,
+  constNumber
+});
+
+worker.run(1, 2).then(result => {
+  console.log(result); // 1 + 2 + 5 = 8
+});
+```
+
+## Transferrables
+
+The third argument to `sync` and `create` provides a way to give in and out transferrables.
+
+```js
+import { sync } from "concurrent-worker";
+
+/**
+ * @param {Float32Array} typedArray
+ * @param {number} inc
+ */
+const funcWithTransferrables = (inc, typedArray) =>
+  typedArray.map(x => x + inc);
+
+const worker = sync(
+  funcWithTransferrables,
+  {},
+  {
+    inTransferable: (inc, typedArray) => [typedArray.buffer],
+    outTransferable: returnVal => [returnVal.buffer]
+  }
+);
+
+worker.run(1, 2).then(result => {
+  console.log(result); // 3
+});
+```
