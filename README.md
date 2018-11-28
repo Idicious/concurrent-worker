@@ -46,22 +46,51 @@ const runAsyncTasks = async () => {
 
 ## Context
 
-When creating a worker you can pass in a context, all context objects can be used inside the run function. The key on the context object is the global property name in the worker.
+When creating a worker you can pass in a context, all context objects can be used inside the run function. The key on the context object is the global property name in the worker, and are all on the `this` object in functions in the worker.
 
 **Important Note**
-Minification and renaming can break context functionality, when minifying use function.name as key on the context object, webpack in dev mode breaks the context.
+When using a bundler or minifyer, in order to ensure the context keep working, the main function and all context funtions must be functions, and other context items should always be used with `this`.
 
 ```js
 import { sync } from "concurrent-worker";
 
 const constNumber = 5;
-const add = (x, y) => x + y + constNumber;
-const run = (x, y) => add(x, y);
+
+function add(x, y) {
+  return x + y + this.constNumber;
+}
+
+function run(x, y) {
+  return this.add(x, y);
+}
 
 const worker = sync(run, {
-  [add.name]: add,
+  add,
   constNumber
 });
+```
+
+When using typescript you can type this correctly as followed
+
+```ts
+import { sync } from "concurrent-worker";
+
+const constNumber = 5;
+
+function add(this: typeof ctx, x: number, y: number) {
+  return x + y + this.constNumber;
+}
+
+function run(this: typeof ctx, x: number, y: number) {
+  return this.add(x, y);
+}
+
+const ctx = { add, constNumber };
+const worker = sync(run, ctx);
+
+const worker2 = sync(function(x: number, y: number) {
+  // this type is inferred from second parameter when given as inline function
+}, ctx);
 ```
 
 ## Transferrables

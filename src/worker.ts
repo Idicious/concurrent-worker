@@ -61,16 +61,16 @@ const getScript = <T extends Array<unknown>, R>(
   options: ITaskOptions<T, R>
 ) =>
   `
-${getContextString(context)}
+${getContextString(context)};
 
 self.RUN = '${RUN}';
 self.TRANSFERRABLE = '${TRANSFERRABLE}';
 
-${TRANSFERRABLE_DECLARATION} = ${options.outTransferable || noopArray}
+${TRANSFERRABLE_DECLARATION} = ${options.outTransferable || noopArray};
 
-${RUN_DECLARATION} = ${execute}
+${RUN_DECLARATION} = ${execute};
   
-${ONMESSAGE_DECLARATION} = ${onmessage}
+${ONMESSAGE_DECLARATION} = ${onmessage};
 `.trim();
 
 export const createWorkerUrl = <T extends Array<unknown>, R>(

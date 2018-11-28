@@ -8,11 +8,11 @@ export declare const run: <T extends unknown[], R>(task: (...args: T) => R, args
  * @param context Worker context, properties of this object are available inside the worker
  * @param options Transferrable options
  */
-export declare const create: <T extends unknown[], R>(task: (...args: T) => R, context?: IWorkerContext | undefined, options?: ITaskOptions<T, R>) => {
+export declare const create: <T extends unknown[], C extends IWorkerContext, R>(task: (this: C, ...args: T) => R, context?: C | undefined, options?: ITaskOptions<T, R>) => {
     kill: () => void;
     run: (...args: T) => Promise<ThenArg<R>>;
 };
-export declare const sync: <T extends unknown[], R>(task: (...args: T) => R, context?: IWorkerContext | undefined, options?: ITaskOptions<T, R>) => {
+export declare const sync: <T extends unknown[], C extends IWorkerContext, R>(task: (this: C, ...args: T) => R, context?: C | undefined, options?: ITaskOptions<T, R>) => {
     kill: () => void;
     run: (...args: T) => Promise<ThenArg<R>>;
 };

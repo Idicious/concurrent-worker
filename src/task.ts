@@ -58,9 +58,9 @@ export const run = <T extends Array<unknown>, R>(
  * @param context Worker context, properties of this object are available inside the worker
  * @param options Transferrable options
  */
-export const create = <T extends Array<unknown>, R>(
-  task: (...args: T) => R,
-  context?: IWorkerContext,
+export const create = <T extends Array<unknown>, C extends IWorkerContext, R>(
+  task: (this: C, ...args: T) => R,
+  context?: C,
   options: ITaskOptions<T, R> = {
     inTransferable: () => [],
     outTransferable: () => []
@@ -88,9 +88,9 @@ export const create = <T extends Array<unknown>, R>(
   };
 };
 
-export const sync = <T extends Array<unknown>, R>(
-  task: (...args: T) => R,
-  context?: IWorkerContext,
+export const sync = <T extends Array<unknown>, C extends IWorkerContext, R>(
+  task: (this: C, ...args: T) => R,
+  context?: C,
   options: ITaskOptions<T, R> = {
     inTransferable: () => [],
     outTransferable: () => []
