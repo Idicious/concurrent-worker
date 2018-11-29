@@ -30,10 +30,30 @@ const CONTEXT_DELIMITER = `;\r\n\r\n`;
  * @param message
  */
 export const onmessage = <T extends Array<unknown>, R>(message: Input<T>) => {
-  Promise.resolve(self[RUN].apply(null, message.data[1])).then((result: R) => {
-    const transferrable = self[TRANSFERRABLE]<R>(result);
-    self.postMessage([message.data[0], result], transferrable as any);
-  });
+  try {
+    const res = self[RUN].apply(null, message.data[1]);
+    Promise.resolve(res)
+      .then(result => {
+        const transferrable = self[TRANSFERRABLE]<R>(result);
+        self.postMessage(
+          [message.data[0], result, false],
+          transferrable as any
+        );
+      })
+      .catch(error => {
+        self.postMessage([message.data[0], error, true], undefined as any);
+      });
+  } catch (e) {
+    const props = Object.getOwnPropertyNames(e);
+    const error = props.reduce(
+      (acc, prop) => {
+        acc[prop] = e[prop];
+        return acc;
+      },
+      {} as any
+    );
+    self.postMessage([message.data[0], error, true], undefined as any);
+  }
 };
 
 const getContextDeclaration = <T>(contextItem: T) => {
@@ -55,13 +75,21 @@ const getContextString = (context: IWorkerContext) =>
     .map(key => `this.${key} = ${getContextDeclaration(context[key])}`)
     .join(CONTEXT_DELIMITER);
 
+const getScriptImport = (scripts?: string[], rootUrl: string = "") =>
+  scripts && scripts.length > 0
+    ? `importScripts(${scripts
+        .map(script => `"${rootUrl}${script}"`)
+        .join(",")});`
+    : "";
+
 const getScript = <T extends Array<unknown>, R>(
   execute: (...args: T) => R,
   context: IWorkerContext,
   options: ITaskOptions<T, R>
 ) =>
   `
-${getContextString(context)};
+${getScriptImport(options.scriptsPath, options.rootUrl)}
+${getContextString(context)}
 
 self.RUN = '${RUN}';
 self.TRANSFERRABLE = '${TRANSFERRABLE}';

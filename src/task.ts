@@ -15,11 +15,15 @@ const executePromiseWorker = <T extends Array<unknown>, R>(
 ) => {
   return new Promise<ThenArg<R>>((resolve, reject) => {
     worker.addEventListener("message", function cb(message: {
-      data: [number, ThenArg<R>];
+      data: [number, ThenArg<R>, boolean];
     }) {
       if (id === message.data[0]) {
+        if (message.data[2]) {
+          reject(message.data[1]);
+        } else {
+          resolve(message.data[1]);
+        }
         worker.removeEventListener("message", cb);
-        resolve(message.data[1]);
       }
     });
 
@@ -63,7 +67,9 @@ export const create = <T extends Array<unknown>, C extends IWorkerContext, R>(
   context?: C,
   options: ITaskOptions<T, R> = {
     inTransferable: () => [],
-    outTransferable: () => []
+    outTransferable: () => [],
+    rootUrl: "",
+    scriptsPath: []
   }
 ) => {
   const url = createWorkerUrl(task, context || {}, options);
@@ -93,7 +99,9 @@ export const sync = <T extends Array<unknown>, C extends IWorkerContext, R>(
   context?: C,
   options: ITaskOptions<T, R> = {
     inTransferable: () => [],
-    outTransferable: () => []
+    outTransferable: () => [],
+    rootUrl: "",
+    scriptsPath: []
   }
 ) => {
   const url = createWorkerUrl(task, context || {}, options);

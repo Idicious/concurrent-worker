@@ -4,10 +4,12 @@ export interface Input<T extends Array<unknown>> {
 export declare interface IWorkerContext {
     [key: string]: unknown;
 }
-export declare type Transferable = ImageBitmap | ArrayBuffer | MessagePort;
+export declare type Transferable = ImageBitmap | ArrayBuffer | MessagePort | SharedArrayBuffer;
 export interface ITaskOptions<T extends Array<unknown>, R> {
     outTransferable?: (value: ThenArg<R>) => Transferable[];
     inTransferable?: (...value: T) => Transferable[];
+    scriptsPath?: string[];
+    rootUrl?: string;
 }
 export declare type ThenArg<T> = T extends Promise<infer U> ? U : T;
 export declare const noopArray: <T extends unknown[]>(...args: T) => Transferable[];

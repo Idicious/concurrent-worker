@@ -27,10 +27,25 @@
      * @param message
      */
     var onmessage = function (message) {
-        Promise.resolve(self[RUN].apply(null, message.data[1])).then(function (result) {
-            var transferrable = self[TRANSFERRABLE](result);
-            self.postMessage([message.data[0], result], transferrable);
-        });
+        try {
+            var res = self[RUN].apply(null, message.data[1]);
+            Promise.resolve(res)
+                .then(function (result) {
+                var transferrable = self[TRANSFERRABLE](result);
+                self.postMessage([message.data[0], result, false], transferrable);
+            })
+                .catch(function (error) {
+                self.postMessage([message.data[0], error, true], undefined);
+            });
+        }
+        catch (e) {
+            var props = Object.getOwnPropertyNames(e);
+            var error = props.reduce(function (acc, prop) {
+                acc[prop] = e[prop];
+                return acc;
+            }, {});
+            self.postMessage([message.data[0], error, true], undefined);
+        }
     };
     var getContextDeclaration = function (contextItem) {
         switch (typeof contextItem) {
@@ -50,8 +65,16 @@
             .map(function (key) { return "this." + key + " = " + getContextDeclaration(context[key]); })
             .join(CONTEXT_DELIMITER);
     };
+    var getScriptImport = function (scripts, rootUrl) {
+        if (rootUrl === void 0) { rootUrl = ""; }
+        return scripts && scripts.length > 0
+            ? "importScripts(" + scripts
+                .map(function (script) { return "\"" + rootUrl + script + "\""; })
+                .join(",") + ");"
+            : "";
+    };
     var getScript = function (execute, context, options) {
-        return ("\n" + getContextString(context) + ";\n\nself.RUN = '" + RUN + "';\nself.TRANSFERRABLE = '" + TRANSFERRABLE + "';\n\n" + TRANSFERRABLE_DECLARATION + " = " + (options.outTransferable || noopArray) + ";\n\n" + RUN_DECLARATION + " = " + execute + ";\n  \n" + ONMESSAGE_DECLARATION + " = " + onmessage + ";\n").trim();
+        return ("\n" + getScriptImport(options.scriptsPath, options.rootUrl) + "\n" + getContextString(context) + "\n\nself.RUN = '" + RUN + "';\nself.TRANSFERRABLE = '" + TRANSFERRABLE + "';\n\n" + TRANSFERRABLE_DECLARATION + " = " + (options.outTransferable || noopArray) + ";\n\n" + RUN_DECLARATION + " = " + execute + ";\n  \n" + ONMESSAGE_DECLARATION + " = " + onmessage + ";\n").trim();
     };
     var createWorkerUrl = function (execute, context, options) {
         var script = getScript(execute, context, options);
@@ -63,8 +86,13 @@
         return new Promise(function (resolve, reject) {
             worker.addEventListener("message", function cb(message) {
                 if (id === message.data[0]) {
+                    if (message.data[2]) {
+                        reject(message.data[1]);
+                    }
+                    else {
+                        resolve(message.data[1]);
+                    }
                     worker.removeEventListener("message", cb);
-                    resolve(message.data[1]);
                 }
             });
             worker.addEventListener("error", function cb(error) {
@@ -94,7 +122,9 @@
     var create = function (task, context, options) {
         if (options === void 0) { options = {
             inTransferable: function () { return []; },
-            outTransferable: function () { return []; }
+            outTransferable: function () { return []; },
+            rootUrl: "",
+            scriptsPath: []
         }; }
         var url = createWorkerUrl(task, context || {}, options);
         var getTransferable = options.inTransferable || noopArray;
@@ -119,7 +149,9 @@
     var sync = function (task, context, options) {
         if (options === void 0) { options = {
             inTransferable: function () { return []; },
-            outTransferable: function () { return []; }
+            outTransferable: function () { return []; },
+            rootUrl: "",
+            scriptsPath: []
         }; }
         var url = createWorkerUrl(task, context || {}, options);
         var worker = new Worker(url);

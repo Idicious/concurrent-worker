@@ -6,10 +6,16 @@ export declare interface IWorkerContext {
   [key: string]: unknown;
 }
 
-export type Transferable = ImageBitmap | ArrayBuffer | MessagePort;
+export type Transferable =
+  | ImageBitmap
+  | ArrayBuffer
+  | MessagePort
+  | SharedArrayBuffer;
 export interface ITaskOptions<T extends Array<unknown>, R> {
   outTransferable?: (value: ThenArg<R>) => Transferable[];
   inTransferable?: (...value: T) => Transferable[];
+  scriptsPath?: string[];
+  rootUrl?: string;
 }
 
 // AWSOME CONDITIONAL PROMISE TYPE UNWRAPPING
