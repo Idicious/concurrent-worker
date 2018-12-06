@@ -1,1 +1,1 @@
-export { create, run, sync } from "./src/task";
+export { create, sync } from "./src/task";

@@ -1,62 +1,61 @@
 import {
+  IResponse,
   ITaskOptions,
   IWorkerContext,
-  noopArray,
-  ThenArg,
-  Transferable
+  Reject,
+  Resolve,
+  ThenArg
 } from "./types";
-import { createWorkerUrl } from "./worker";
+import { noop } from "./worker";
+import { createWorkerUrl } from "./worker-creation";
 
+/**
+ * Create a worker onmessage callback that resolves or rejects if the sync id matches.
+ */
+const createWorkerCallback = <R>(
+  worker: Worker,
+  syncIdPing: number,
+  resolve: Resolve<R>,
+  reject: Reject
+) =>
+  function cb(message: IResponse<R>) {
+    const syncIdPong = message.data[0];
+    const dataOrError = message.data[1];
+    const hasError = message.data[2];
+
+    if (syncIdPing === syncIdPong) {
+      if (hasError) {
+        reject(dataOrError);
+      } else {
+        resolve(dataOrError);
+      }
+      worker.removeEventListener("message", cb);
+    }
+  };
+
+/**
+ * Call worker with given arguments, returns a promise that resolves when onmessage is called
+ * with matching syncId.
+ */
 const executePromiseWorker = <T extends Array<unknown>, R>(
   worker: Worker,
-  id: number,
+  syncId: number,
   args: T,
   transferrable?: Transferable[]
-) => {
-  return new Promise<ThenArg<R>>((resolve, reject) => {
-    worker.addEventListener("message", function cb(message: {
-      data: [number, ThenArg<R>, boolean];
-    }) {
-      if (id === message.data[0]) {
-        if (message.data[2]) {
-          reject(message.data[1]);
-        } else {
-          resolve(message.data[1]);
-        }
-        worker.removeEventListener("message", cb);
-      }
-    });
+) =>
+  new Promise<ThenArg<R>>((resolve, reject) => {
+    worker.addEventListener(
+      "message",
+      createWorkerCallback(worker, syncId, resolve, reject)
+    );
 
-    worker.addEventListener("error", function cb(error) {
-      worker.removeEventListener("error", cb);
-      reject(error);
-    });
-
-    worker.postMessage([id, args], transferrable);
+    worker.postMessage([syncId, args], transferrable);
   });
-};
-
-export const run = <T extends Array<unknown>, R>(
-  task: (...args: T) => R,
-  args: T,
-  transferable?: Transferable[]
-) => {
-  const url = createWorkerUrl(task, {}, {});
-  const worker = new Worker(url);
-
-  return executePromiseWorker<T, R>(worker, -1, args, transferable).then(
-    result => {
-      URL.revokeObjectURL(url);
-      worker.terminate();
-
-      return result;
-    }
-  );
-};
 
 /**
  * Creates a task that can be run in a webworker. If you want to use functions and variables from
  * the outer scope you must pass them in via the context parameter, else they will not be available.
+ * This creation method creates a new web worker for each call to it allowing multiple calls to run in paralel.
  *
  * @param task Function to execute off the main thread
  * @param context Worker context, properties of this object are available inside the worker
@@ -64,20 +63,14 @@ export const run = <T extends Array<unknown>, R>(
  */
 export const create = <T extends Array<unknown>, C extends IWorkerContext, R>(
   task: (this: C, ...args: T) => R,
-  context?: C,
-  options: ITaskOptions<T, R> = {
-    inTransferable: () => [],
-    outTransferable: () => [],
-    rootUrl: "",
-    scriptsPath: []
-  }
+  options: ITaskOptions<T, R, C> = {}
 ) => {
-  const url = createWorkerUrl(task, context || {}, options);
-  const getTransferable = options.inTransferable || noopArray;
+  const url = createWorkerUrl(task, options);
+  const getTransferable = options.inTransferable || noop;
 
-  const runner = (...args: T) => {
+  const run = (args: T) => {
     const worker = new Worker(url);
-    const transferable = getTransferable(...args);
+    const transferable = getTransferable(args);
 
     return executePromiseWorker<T, R>(worker, -1, args, transferable).then(
       result => {
@@ -90,27 +83,31 @@ export const create = <T extends Array<unknown>, C extends IWorkerContext, R>(
 
   return {
     kill,
-    run: runner
+    run
   };
 };
 
+/**
+ * Creates a task that can be run in a webworker. If you want to use functions and variables from
+ * the outer scope you must pass them in via the context parameter, else they will not be available.
+ * This creation method uses a single web worker for all calls to it, calls will be processed synchonously
+ * in that worker. Has les overhead than `create` but does not run multiple calls in paralel.
+ *
+ * @param task Function to execute off the main thread
+ * @param context Worker context, properties of this object are available inside the worker
+ * @param options Transferrable options
+ */
 export const sync = <T extends Array<unknown>, C extends IWorkerContext, R>(
   task: (this: C, ...args: T) => R,
-  context?: C,
-  options: ITaskOptions<T, R> = {
-    inTransferable: () => [],
-    outTransferable: () => [],
-    rootUrl: "",
-    scriptsPath: []
-  }
+  options: ITaskOptions<T, R, C> = {}
 ) => {
-  const url = createWorkerUrl(task, context || {}, options);
+  const url = createWorkerUrl(task, options);
   const worker = new Worker(url);
-  const getTransferable = options.inTransferable || noopArray;
+  const getTransferable = options.inTransferable || noop;
   let syncId = 0;
 
-  const runner = (...args: T) => {
-    const transferable = getTransferable(...args);
+  const run = (args: T) => {
+    const transferable = getTransferable(args);
     return executePromiseWorker<T, R>(worker, syncId++, args, transferable);
   };
   const kill = () => {
@@ -119,6 +116,6 @@ export const sync = <T extends Array<unknown>, C extends IWorkerContext, R>(
   };
   return {
     kill,
-    run: runner
+    run
   };
 };

@@ -1,0 +1,17 @@
+{
+  "include": ["src", "spec"],
+  "compilerOptions": {
+    "sourceMap": true,
+    "module": "commonjs",
+    "target": "es5",
+    "allowJs": false,
+    "allowUnreachableCode": false,
+    "lib": ["esnext", "dom"],
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "declaration": true,
+    "declarationDir": "./typings",
+    "alwaysStrict": false,
+    "noImplicitUseStrict": true
+  }
+}
