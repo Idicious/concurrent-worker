@@ -5,8 +5,8 @@ import typescript from "typescript";
 export default {
   input: "src/index.ts",
   output: {
-    file: "dist/index.js",
-    format: "umd",
+    file: "dist/index.es.js",
+    format: "es",
     name: "Task"
   },
   plugins: [

@@ -1,4 +1,5 @@
 {
+  "exclude": ["spec"],
   "compilerOptions": {
     /* Basic Options */
     "emitDeclarationOnly": true,
