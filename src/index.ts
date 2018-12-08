@@ -1,1 +1,1 @@
-export { create, sync } from "./task";
+export { concurrent, serial } from "./task";

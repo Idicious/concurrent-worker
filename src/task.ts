@@ -61,7 +61,11 @@ const executePromiseWorker = <T extends Array<unknown>, R>(
  * @param context Worker context, properties of this object are available inside the worker
  * @param options Transferrable options
  */
-export const create = <T extends Array<unknown>, C extends IWorkerContext, R>(
+export const concurrent = <
+  T extends Array<unknown>,
+  C extends IWorkerContext,
+  R
+>(
   task: (this: C, ...args: T) => R,
   options: ITaskOptions<T, R, C> = {}
 ) => {
@@ -97,7 +101,7 @@ export const create = <T extends Array<unknown>, C extends IWorkerContext, R>(
  * @param context Worker context, properties of this object are available inside the worker
  * @param options Transferrable options
  */
-export const sync = <T extends Array<unknown>, C extends IWorkerContext, R>(
+export const serial = <T extends Array<unknown>, C extends IWorkerContext, R>(
   task: (this: C, ...args: T) => R,
   options: ITaskOptions<T, R, C> = {}
 ) => {

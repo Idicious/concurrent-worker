@@ -1,14 +1,14 @@
 {
   "name": "concurrent-worker",
   "version": "0.0.7",
-  "description": "js async task executer",
+  "description": "Multithreading for javascript",
   "main": "./dist/index.js",
   "esnext": "./dist/index.es.js",
   "types": "./dist/index.d.ts",
   "author": "David Sherman",
   "license": "MIT",
   "scripts": {
-    "build": "tsc && rollup -c",
+    "build": "tsc && rollup -c --environment format:umd && rollup -c --environment format:es",
     "test": "karma start"
   },
   "repository": {
