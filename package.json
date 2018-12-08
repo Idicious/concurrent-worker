@@ -7,6 +7,16 @@
   "types": "./dist/index.d.ts",
   "author": "David Sherman",
   "license": "MIT",
+  "keywords": [
+    "worker",
+    "webworker",
+    "concurrency",
+    "thread",
+    "threading",
+    "multi-thread",
+    "multi-threading",
+    "browser"
+  ],
   "scripts": {
     "build": "tsc && rollup -c --environment format:umd && rollup -c --environment format:es",
     "test": "yarn karma start --single-run --browsers Firefox --reporters progress,coverage,coveralls",
