@@ -114,3 +114,18 @@ const arr = new Float32Array([1, 2, 3, 4]);
 
 worker.run([5, arr]).then(console.log); // Float32Array([6, 7, 8, 9])
 ```
+
+### Returning a Promise
+
+If your wrapped function returns a Promise, it will be resolved in
+the worker before returning to the main thread.
+
+```js
+import { serial } from "concurrent-worker";
+
+const worker = serial((x, y) => Promise.resolve(x + y));
+
+worker.run([1, 2]).then(result => {
+  console.log(result); // 3
+});
+```
