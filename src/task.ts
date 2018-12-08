@@ -4,6 +4,7 @@ import {
   IWorkerContext,
   Reject,
   Resolve,
+  RunFunc,
   ThenArg
 } from "./types";
 import { noop } from "./worker";
@@ -72,7 +73,7 @@ export const concurrent = <
   const url = createWorkerUrl(task, config);
   const getTransferable = config.inTransferable || noop;
 
-  const run = (args: T) => {
+  const run = ((args: T) => {
     const worker = new Worker(url);
     const transferable = getTransferable(args);
 
@@ -82,7 +83,8 @@ export const concurrent = <
         return result;
       }
     );
-  };
+  }) as RunFunc<T, R>;
+
   const kill = () => URL.revokeObjectURL(url);
 
   return {
@@ -110,10 +112,11 @@ export const serial = <T extends Array<unknown>, C extends IWorkerContext, R>(
   const getTransferable = config.inTransferable || noop;
   let syncId = 0;
 
-  const run = (args: T) => {
+  const run = ((args: T) => {
     const transferable = getTransferable(args);
     return executePromiseWorker<T, R>(worker, syncId++, args, transferable);
-  };
+  }) as RunFunc<T, R>;
+
   const kill = () => {
     worker.terminate();
     URL.revokeObjectURL(url);

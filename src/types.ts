@@ -1,22 +1,22 @@
-export declare interface Input<T extends Array<unknown>> {
+export interface Input<T extends Array<unknown>> {
   data: [number, T];
 }
 
-export declare interface IResponse<R> {
+export interface IResponse<R> {
   data: [number, ThenArg<R>, boolean];
 }
 
-export declare interface IWorkerContext {
+export interface IWorkerContext {
   [key: string]: unknown;
 }
 
-export declare type Transferable =
+export type Transferable =
   | ImageBitmap
   | ArrayBuffer
   | MessagePort
   | SharedArrayBuffer;
 
-export declare interface IWorkerConfig<
+export interface IWorkerConfig<
   T extends Array<unknown>,
   C extends IWorkerContext,
   R
@@ -28,12 +28,23 @@ export declare interface IWorkerConfig<
   rootUrl?: string;
 }
 
-export declare type Resolve<T> = (
-  val: ThenArg<T> | PromiseLike<ThenArg<T>> | undefined
-) => void;
+export type EmptyArray<T extends Array<unknown>> = T & { length: 0 };
 
-export declare type Reject = (error: any) => void;
+export type UnknownFunc<T extends Array<unknown>, R> = T extends EmptyArray<T>
+  ? () => R
+  : (args: T) => R;
+
+export type RunFunc<T extends Array<unknown>, R> = UnknownFunc<
+  T,
+  ThenPromise<R>
+>;
+
+export type Resolve<T> = (val: ThenArg<T> | ThenPromise<T> | undefined) => void;
+
+export type Reject = (error: any) => void;
 
 // AWSOME CONDITIONAL PROMISE TYPE UNWRAPPING
 // TAKEN FROM https://stackoverflow.com/questions/48011353/how-to-unwrap-type-of-a-promise
-export declare type ThenArg<T> = T extends Promise<infer U> ? U : T;
+export type ThenArg<T> = T extends Promise<infer U> ? U : T;
+
+export type ThenPromise<T> = Promise<ThenArg<T>>;

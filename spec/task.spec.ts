@@ -149,7 +149,7 @@ describe("Sync worker", () => {
       throw new Error("Test error");
     });
 
-    return worker.run([]).catch(error => {
+    return worker.run().catch(error => {
       expect(error.message).toBe("Test error");
       worker.kill();
     });
@@ -158,7 +158,7 @@ describe("Sync worker", () => {
   it("Propogates promise rejection back to main thread", () => {
     const worker = serial(() => Promise.reject("Test error"));
 
-    return worker.run([]).catch(error => {
+    return worker.run().catch(error => {
       expect(error).toBe("Test error");
       worker.kill();
     });
@@ -194,7 +194,7 @@ describe("Sync worker", () => {
   it("Handles differt context types", async () => {
     const worker = serial(contextFunc, { context });
 
-    const result = await worker.run([]);
+    const result = await worker.run();
     expect(result).toEqual(context);
 
     worker.kill();
@@ -239,7 +239,7 @@ describe("Async worker", () => {
       throw new Error("Test error");
     });
 
-    return worker.run([]).catch(e => {
+    return worker.run().catch(e => {
       expect(e.message).toBe("Test error");
       worker.kill();
     });
@@ -248,7 +248,7 @@ describe("Async worker", () => {
   it("Propagates promise rejection back to main thread", () => {
     const worker = concurrent(() => Promise.reject("Test error"));
 
-    return worker.run([]).catch(e => {
+    return worker.run().catch(e => {
       expect(e).toBe("Test error");
       worker.kill();
     });
@@ -289,7 +289,7 @@ describe("Async worker", () => {
   it("Handles differt context types", async () => {
     const worker = serial(contextFunc, { context });
 
-    const result = await worker.run([]);
+    const result = await worker.run();
     expect(result).toEqual(context);
 
     worker.kill();
