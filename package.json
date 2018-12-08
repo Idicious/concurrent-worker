@@ -9,7 +9,8 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc && rollup -c --environment format:umd && rollup -c --environment format:es",
-    "test": "karma start"
+    "test": "yarn karma start --single-run --browsers Firefox",
+    "test:dev": "karma start"
   },
   "repository": {
     "type": "git",

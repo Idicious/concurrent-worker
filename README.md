@@ -1,3 +1,7 @@
+[![npm version](https://badge.fury.io/js/concurrent-worker.svg)](https://badge.fury.io/js/concurrent-worker)
+[![Build Status](https://travis-ci.org/Idicious/concurrent-worker.svg?branch=master)](https://travis-ci.org/Idicious/concurrent-worker)
+[![Coverage Status](https://coveralls.io/repos/github/Idicious/concurrent-worker/badge.svg?branch=master)](https://coveralls.io/github/Idicious/concurrent-worker?branch=master)
+
 # Concurrent worker
 
 This library allowes you to create web workers inline, focussed on concurrency and control flow. It is Promise based, this allowes control
