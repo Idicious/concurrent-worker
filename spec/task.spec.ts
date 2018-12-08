@@ -1,5 +1,5 @@
 import { concurrent, serial } from "../src/task";
-import { ITaskOptions } from "../src/types";
+import { IWorkerConfig } from "../src/types";
 
 const context = {
   a: "a",
@@ -65,7 +65,7 @@ describe("Script loading", () => {
       (x: number) => {
         return sum(x, x);
       },
-      { rootUrl, scriptsPath: [sumScript] }
+      { rootUrl, scripts: [sumScript] }
     );
 
     const result = await worker.run([5]);
@@ -82,7 +82,7 @@ describe("Script loading", () => {
         return _.map([x], (n: number) => n ** n);
       },
       {
-        scriptsPath: [lodashScript]
+        scripts: [lodashScript]
       }
     );
 
@@ -100,7 +100,7 @@ describe("Script loading", () => {
       },
       {
         rootUrl,
-        scriptsPath: [sumScript, lodashScript]
+        scripts: [sumScript, lodashScript]
       }
     );
 
@@ -269,7 +269,7 @@ describe("Async worker", () => {
   });
 
   it("Works with transferables", async () => {
-    const options: ITaskOptions<[number, Float32Array], Float32Array, {}> = {
+    const options: IWorkerConfig<[number, Float32Array], {}, Float32Array> = {
       inTransferable: ([_, arr]) => [arr.buffer],
       outTransferable: res => [res.buffer]
     };

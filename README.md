@@ -1,79 +1,65 @@
 # Concurrent worker
 
-Lightweight JS library that allowes you to create web workers inline, focussed on concurrency and control flow. There are two worker creation methods, `create` and `sync`.
+This library allowes you to create web workers inline, focussed on concurrency and control flow. It is Promise based, this allowes control
+flow to be regulated via Promise chains as well as async / await. You can also pass in and use functions and objects / primitives from the main thread via the context.
 
-## Sync
+There are two worker creation methods, `serial` and `concurrent`. A `serial` worker will create a single `Worker` that all calls to it will be executed on. A `concurrent` worker will create a new `Worker` for each call to it, this allowes you to run multiple calls in parallel. The API's of both are identical.
 
-Instantiates a single worker that will be used for all calls to it, while the calls are run on a backround thread they will run synchronously on that thread. This has no worker creation overhead after calling create but multiple calls do not run concurrently.
-
-Here is a basic usage example.
+```sh
+npm install concurrent-worker --save
+```
 
 ```js
-import { sync } from "concurrent-worker";
+import { serial } from "concurrent-worker";
 
-const worker = sync((x, y) => x + y);
+const worker = serial((x, y) => x + y);
 
-worker.run(1, 2).then(result => {
+worker.run([1, 2]).then(result => {
   console.log(result); // 3
 });
 ```
 
-## Create
+## Config
 
-After creating the worker every call to run will start a new worker which will be disposed of as soon as it completes. This allowes you to run multiple calls to the worker concurrently.
+The second, optional, argument to the creation method is a configuration object, this has the following properties:
+
+| Property         | Type     | Description                                                                                                             | Default  |
+| ---------------- | -------- | ----------------------------------------------------------------------------------------------------------------------- | -------- |
+| context          | object   | All functions, objects and primitives on this object are available in the Worker, they can be accessed via `this.{key}` | {}       |
+| inTransferrable  | Function | A function that returns an array of Transferrable objects from the input arguments                                      | () => [] |
+| outTransferrable | Function | A function that returns an array of Transferrable objects from the result object.                                       | () => [] |
+| rootUrl          | string   | Scripts loaded from a relative path need to be prepended with the sites root URL.                                       | ''       |
+| scripts          | string[] | Array of script URL's, these scripts are loaded in the worker when it's instantiated.                                   | []       |
+
+## Examples
+
+### Concurrent worker with async / await and Promise.all
 
 ```js
-import { create, sync } from "concurrent-worker";
+import { concurrent } from "concurrent-worker";
 
-const asyncWorker = create((x, y) => x + y);
-const syncWorker = sync(x => Promise.resolve(x ** x));
+const sum = (x, y) => x + y;
+const concurrentWorker = concurrent(sum);
 
 const runAsyncTasks = async () => {
   // These three calls will run concurrently on 3 seperate workers
-  const concurrent = Promise.all([
-    asyncWorker.run(1, 2),
-    asyncWorker.run(2, 3),
-    asyncWorker.run(3, 4)
+  const processes = Promise.all([
+    concurrentWorker.run([1, 2]),
+    concurrentWorker.run([2, 3]),
+    concurrentWorker.run([3, 4])
   ]);
 
-  const results = await concurrent; // [3, 5, 7]
-  const sum = results.reduce((acc, val) => (acc += val), 0); // 15
-  const final = await syncWorker.run(sum);
+  const results = await processes; // [3, 5, 7]
+  const summed = results.reduce((acc, val) => (acc += val), 0);
 
-  console.log(final); // 225
+  console.log(summed); // 15
 };
 ```
 
-## Context
-
-When creating a worker you can pass in a context, all context objects can be used inside the run function. The key on the context object is the global property name in the worker, and are all on the `this` object in functions in the worker.
-
-**Important Note**
-When using a bundler or minifyer, in order to ensure the context keep working, the main function and all context funtions must be functions, and other context items should always be used with `this`.
-
-```js
-import { sync } from "concurrent-worker";
-
-const constNumber = 5;
-
-function add(x, y) {
-  return x + y + this.constNumber;
-}
-
-function run(x, y) {
-  return this.add(x, y);
-}
-
-const worker = sync(run, {
-  add,
-  constNumber
-});
-```
-
-When using typescript you can type this correctly as followed
+### Using config.context with TypeScript
 
 ```ts
-import { sync } from "concurrent-worker";
+import { serial } from "concurrent-worker";
 
 const constNumber = 5;
 
@@ -85,34 +71,46 @@ function run(this: typeof ctx, x: number, y: number) {
   return this.add(x, y);
 }
 
-const ctx = { add, constNumber };
-const worker = sync(run, ctx);
-
-const worker2 = sync(function(x: number, y: number) {
-  // this type is inferred from second parameter when given as inline function
-}, ctx);
+const context = { add, constNumber };
+const worker = serial(run, { context });
 ```
 
-## Transferrables
+### Using in and out Transferrables
 
-The third argument to `sync` and `create` provides a way to give in and out transferrables.
-
-```js
+```ts
 import { sync } from "concurrent-worker";
 
-/**
- * @param {Float32Array} typedArray
- * @param {number} inc
- */
-const funcWithTransferrables = (inc, typedArray) =>
-  typedArray.map(x => x + inc);
+const arrayAdd = (n: number, arr: Float32Array) => arr.map(x => x + n);
 
-const worker = sync(
-  funcWithTransferrables,
-  {},
-  {
-    inTransferable: (inc, typedArray) => [typedArray.buffer],
-    outTransferable: returnVal => [returnVal.buffer]
-  }
-);
+const worker = serial(arrayAdd, {
+  inTransferrable: ([n, arr]) => [arr.buffer],
+  outTransferrable: arr => [arr.buffer]
+});
+
+const arr = new Float32Array([1, 2, 3, 4]);
+
+worker.run([5, arr]).then(console.log); // Float32Array([6, 7, 8, 9])
+```
+
+### Using a combination of self hosted and external scripts
+
+```ts
+import { concurrent } from "concurrent-worker";
+
+// Function using lodash map from cdn and sum function from self hosted script import.
+const arrayAdd = (n: number, arr: Float32Array) => _.map(arr, x => sum(x, n));
+
+const worker = concurrent(arrayAdd, {
+  inTransferrable: ([n, arr]) => [arr.buffer],
+  outTransferrable: arr => [arr.buffer],
+  rootUrl: "http://www.mydomain.com",
+  scripts: [
+    "/js/sum.js",
+    "https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.11/lodash.core.js"
+  ]
+});
+
+const arr = new Float32Array([1, 2, 3, 4]);
+
+worker.run([5, arr]).then(console.log); // Float32Array([6, 7, 8, 9])
 ```

@@ -1,4 +1,4 @@
-import { ITaskOptions, IWorkerContext } from "./types";
+import { IWorkerConfig, IWorkerContext } from "./types";
 import { getError, noop, onmessage } from "./worker";
 
 const getContextDeclaration = <T>(contextItem: T) => {
@@ -35,28 +35,28 @@ const getScriptImport = (scripts?: string[], rootUrl: string = "") =>
         .join(",")});`
     : "";
 
-const getScript = <T extends Array<unknown>, R, C extends IWorkerContext>(
+const getScript = <T extends Array<unknown>, C extends IWorkerContext, R>(
   execute: (...args: T) => R,
-  options: ITaskOptions<T, R, C>
+  config: IWorkerConfig<T, C, R>
 ) =>
   `
-${getScriptImport(options.scriptsPath, options.rootUrl)}
-${getContextString(options.context)}
+${getScriptImport(config.scripts, config.rootUrl)}
+${getContextString(config.context)}
 self.getError = ${getError};
-self.getTransferrables = ${options.outTransferable || noop};
+self.getTransferrables = ${config.outTransferable || noop};
 self.run = ${execute};
 self.onmessage = ${onmessage};
 `.trim();
 
 export const createWorkerUrl = <
   T extends Array<unknown>,
-  R,
-  C extends IWorkerContext
+  C extends IWorkerContext,
+  R
 >(
   execute: (...args: T) => R,
-  options: ITaskOptions<T, R, C>
+  config: IWorkerConfig<T, C, R>
 ): string => {
-  const script = getScript(execute, options);
+  const script = getScript(execute, config);
   const blob = new Blob([script], { type: "application/javascript" });
 
   return URL.createObjectURL(blob);

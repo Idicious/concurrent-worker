@@ -16,15 +16,15 @@ export declare type Transferable =
   | MessagePort
   | SharedArrayBuffer;
 
-export declare interface ITaskOptions<
+export declare interface IWorkerConfig<
   T extends Array<unknown>,
-  R,
-  C extends IWorkerContext
+  C extends IWorkerContext,
+  R
 > {
   outTransferable?: (value: ThenArg<R>) => Transferable[];
   inTransferable?: (values: T) => Transferable[];
   context?: C;
-  scriptsPath?: string[];
+  scripts?: string[];
   rootUrl?: string;
 }
 
@@ -33,6 +33,7 @@ export declare type Resolve<T> = (
 ) => void;
 
 export declare type Reject = (error: any) => void;
+
 // AWSOME CONDITIONAL PROMISE TYPE UNWRAPPING
 // TAKEN FROM https://stackoverflow.com/questions/48011353/how-to-unwrap-type-of-a-promise
 export declare type ThenArg<T> = T extends Promise<infer U> ? U : T;

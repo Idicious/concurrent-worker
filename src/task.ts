@@ -1,6 +1,6 @@
 import {
   IResponse,
-  ITaskOptions,
+  IWorkerConfig,
   IWorkerContext,
   Reject,
   Resolve,
@@ -59,7 +59,7 @@ const executePromiseWorker = <T extends Array<unknown>, R>(
  *
  * @param task Function to execute off the main thread
  * @param context Worker context, properties of this object are available inside the worker
- * @param options Transferrable options
+ * @param config Worker configuration
  */
 export const concurrent = <
   T extends Array<unknown>,
@@ -67,10 +67,10 @@ export const concurrent = <
   R
 >(
   task: (this: C, ...args: T) => R,
-  options: ITaskOptions<T, R, C> = {}
+  config: IWorkerConfig<T, C, R> = {}
 ) => {
-  const url = createWorkerUrl(task, options);
-  const getTransferable = options.inTransferable || noop;
+  const url = createWorkerUrl(task, config);
+  const getTransferable = config.inTransferable || noop;
 
   const run = (args: T) => {
     const worker = new Worker(url);
@@ -99,15 +99,15 @@ export const concurrent = <
  *
  * @param task Function to execute off the main thread
  * @param context Worker context, properties of this object are available inside the worker
- * @param options Transferrable options
+ * @param config Worker configuration
  */
 export const serial = <T extends Array<unknown>, C extends IWorkerContext, R>(
   task: (this: C, ...args: T) => R,
-  options: ITaskOptions<T, R, C> = {}
+  config: IWorkerConfig<T, C, R> = {}
 ) => {
-  const url = createWorkerUrl(task, options);
+  const url = createWorkerUrl(task, config);
   const worker = new Worker(url);
-  const getTransferable = options.inTransferable || noop;
+  const getTransferable = config.inTransferable || noop;
   let syncId = 0;
 
   const run = (args: T) => {
