@@ -56,7 +56,7 @@ const runAsyncTasks = async () => {
 };
 ```
 
-### Using config.context with TypeScript
+### Using context with TypeScript
 
 ```ts
 import { serial } from "concurrent-worker";
@@ -78,7 +78,7 @@ const worker = serial(run, { context });
 ### Using in and out Transferrables
 
 ```ts
-import { sync } from "concurrent-worker";
+import { serial } from "concurrent-worker";
 
 const arrayAdd = (n: number, arr: Float32Array) => arr.map(x => x + n);
 
