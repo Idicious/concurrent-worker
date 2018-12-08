@@ -23,7 +23,7 @@ worker.run([1, 2]).then(result => {
 
 The second, optional, argument to the creation method is a configuration object, this has the following properties:
 
-| Property         | Type     | Description                                                                                                             | Default  |
+| Key              | Type     | Description                                                                                                             | Default  |
 | ---------------- | -------- | ----------------------------------------------------------------------------------------------------------------------- | -------- |
 | context          | object   | All functions, objects and primitives on this object are available in the Worker, they can be accessed via `this.{key}` | {}       |
 | inTransferrable  | Function | A function that returns an array of Transferrable objects from the input arguments                                      | () => [] |
