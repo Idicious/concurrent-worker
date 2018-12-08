@@ -5,7 +5,7 @@
 # Concurrent worker
 
 This library allowes you to create web workers inline, focussed on concurrency and control flow. It is Promise based, this allowes control
-flow to be regulated via Promise chains as well as async / await. You can also pass in and use functions and objects / primitives from the main thread via the context.
+flow to be regulated via Promise chains as well as async / await. You can also pass in and use functions and objects / primitives from the main thread via the context. All exceptions and promise rejections are propagated to the main thread and can be handled in a promise catch or try / catch block in an async function.
 
 There are two worker creation methods, `serial` and `concurrent`. A `serial` worker will create a single `Worker` that all calls to it will be executed on. A `concurrent` worker will create a new `Worker` for each call to it, this allowes you to run multiple calls in parallel. The API's of both are identical.
 
