@@ -6,7 +6,7 @@
     "target": "es5",
     "allowJs": false,
     "allowUnreachableCode": false,
-    "lib": ["esnext", "dom"],
+    "lib": ["esnext", "webworker"],
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "declaration": true,

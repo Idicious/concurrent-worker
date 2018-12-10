@@ -10,12 +10,6 @@ export interface IWorkerContext {
   [key: string]: unknown;
 }
 
-export type Transferable =
-  | ImageBitmap
-  | ArrayBuffer
-  | MessagePort
-  | SharedArrayBuffer;
-
 export interface IWorkerConfig<
   T extends Array<unknown>,
   C extends IWorkerContext,

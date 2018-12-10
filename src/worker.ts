@@ -1,8 +1,10 @@
 import { Input } from "./types";
 
+// tslint:disable:no-string-literal
+// tslint:disable:interface-name
+
 declare global {
-  // tslint:disable-next-line:interface-name
-  interface Window {
+  interface WorkerGlobalScope {
     run<T extends Array<unknown>, R>(...args: T): R;
     getTransferrables<T>(val: T): Transferable[];
     getError(e: any): any;
@@ -19,31 +21,23 @@ export const noop = () => [];
  * Tested with Webpack dev and prod mode, Closure Compiler ADVANCED mode with ES3, ES5 and ES6 target.
  * @param message
  */
-/* istanbul ignore next */
 export const onmessage = <T extends Array<unknown>, R>(message: Input<T>) => {
   try {
-    // tslint:disable-next-line:no-string-literal
     const res = self["run"].apply(null, message.data[1]) as R;
     Promise.resolve(res)
       .then(result => {
-        // tslint:disable-next-line:no-string-literal
         const transferrable = self["getTransferrables"]<R>(result);
-        self.postMessage(
-          [message.data[0], result, false],
-          transferrable as any
-        );
+        postMessage([message.data[0], result, false], transferrable);
       })
       .catch(error => {
-        self.postMessage([message.data[0], error, true], undefined as any);
+        postMessage([message.data[0], error, true], undefined as any);
       });
   } catch (e) {
-    // tslint:disable-next-line:no-string-literal
     const error = self["getError"](e);
-    self.postMessage([message.data[0], error, true], undefined as any);
+    postMessage([message.data[0], error, true]);
   }
 };
 
-/* istanbul ignore next */
 export const getError = (e: any) => {
   const props = Object.getOwnPropertyNames(e);
   return props.reduce(
