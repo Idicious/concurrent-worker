@@ -22,6 +22,8 @@ export interface IWorkerConfig<
   rootUrl?: string;
 }
 
+export type WorkerThis<C extends IWorkerContext> = C & { rootUrl: string };
+
 export type EmptyArray<T extends Array<unknown>> = T & { length: 0 };
 
 export type UnknownFunc<T extends Array<unknown>, R> = T extends EmptyArray<T>

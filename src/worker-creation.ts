@@ -42,6 +42,7 @@ const getScript = <T extends Array<unknown>, C extends IWorkerContext, R>(
   `
 ${getScriptImport(config.scripts, config.rootUrl)}
 ${getContextString(config.context)}
+self.rootUrl = '${config.rootUrl}';
 self.getError = ${getError};
 self.getTransferrables = ${config.outTransferable || noop};
 self.run = ${execute};

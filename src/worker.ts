@@ -23,13 +23,14 @@ export const noop = () => [];
  */
 export const onmessage = <T extends Array<unknown>, R>(message: Input<T>) => {
   try {
-    const res = self["run"].apply(null, message.data[1]) as R;
+    const res = self["run"].apply<null, T, R>(null, message.data[1]);
     Promise.resolve(res)
       .then(result => {
         const transferrable = self["getTransferrables"]<R>(result);
         postMessage([message.data[0], result, false], transferrable);
       })
-      .catch(error => {
+      .catch(e => {
+        const error = self["getError"](e);
         postMessage([message.data[0], error, true], undefined as any);
       });
   } catch (e) {
@@ -39,12 +40,20 @@ export const onmessage = <T extends Array<unknown>, R>(message: Input<T>) => {
 };
 
 export const getError = (e: any) => {
-  const props = Object.getOwnPropertyNames(e);
-  return props.reduce(
-    (acc, prop) => {
-      acc[prop] = e[prop];
-      return acc;
-    },
-    {} as any
-  );
+  if (typeof e === "string") {
+    return e;
+  }
+
+  if (typeof e === "object") {
+    const props = Object.getOwnPropertyNames(e);
+    return props.reduce(
+      (acc, prop) => {
+        acc[prop] = e[prop];
+        return acc;
+      },
+      {} as any
+    );
+  }
+
+  return "Unknown error in Worker";
 };

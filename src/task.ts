@@ -5,7 +5,8 @@ import {
   Reject,
   Resolve,
   RunFunc,
-  ThenArg
+  ThenArg,
+  WorkerThis
 } from "./types";
 import { noop } from "./worker";
 import { createWorkerUrl } from "./worker-creation";
@@ -67,7 +68,7 @@ export const concurrent = <
   C extends IWorkerContext,
   R
 >(
-  task: (this: C, ...args: T) => R,
+  task: (this: WorkerThis<C>, ...args: T) => R,
   config: IWorkerConfig<T, C, R> = {}
 ) => {
   const url = createWorkerUrl(task, config);
@@ -104,7 +105,7 @@ export const concurrent = <
  * @param config Worker configuration
  */
 export const serial = <T extends Array<unknown>, C extends IWorkerContext, R>(
-  task: (this: C, ...args: T) => R,
+  task: (this: WorkerThis<C>, ...args: T) => R,
   config: IWorkerConfig<T, C, R> = {}
 ) => {
   const url = createWorkerUrl(task, config);
