@@ -3,13 +3,13 @@ import {
   IWorker,
   IWorkerConfig,
   IWorkerContext,
+  noop,
   Reject,
   Resolve,
   RunFunc,
   ThenArg,
   WorkerThis
 } from "./types";
-import { noop } from "./worker";
 import { createWorkerUrl } from "./worker-creation";
 
 /**

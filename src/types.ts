@@ -10,6 +10,8 @@ export interface IWorkerContext {
   [key: string]: unknown;
 }
 
+export const noop = () => [];
+
 export interface IWorkerConfig<
   T extends Array<unknown>,
   C extends IWorkerContext,
