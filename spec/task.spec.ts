@@ -22,7 +22,7 @@ const contextFunc = function(this: typeof context) {
 const rootUrl = "http://localhost:9876";
 const sumScript = "/js/sum.js";
 const lodashScript =
-  "https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.11/lodash.core.js";
+  "https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.11/lodash.core.min.js";
 
 const square = (x: number) => x * x;
 const sum = (x: number, y: number) => x + y;
@@ -149,19 +149,37 @@ describe("Sync worker", () => {
       throw new Error("Test error");
     });
 
-    return worker.run().catch(error => {
-      expect(error.message).toBe("Test error");
-      worker.kill();
-    });
+    return worker
+      .run()
+      .then(fail)
+      .catch(error => {
+        expect(error.message).toBe("Test error");
+        worker.kill();
+      });
   });
 
   it("Propogates promise rejection back to main thread", () => {
     const worker = serial(() => Promise.reject("Test error"));
 
-    return worker.run().catch(error => {
-      expect(error).toBe("Test error");
-      worker.kill();
-    });
+    return worker
+      .run()
+      .then(fail)
+      .catch(error => {
+        expect(error).toBe("Test error");
+        worker.kill();
+      });
+  });
+
+  it("Propogates thrown exceptions in promises back to main thread", () => {
+    const worker = serial(() => fetch("invalidUrl"));
+
+    return worker
+      .run()
+      .then(fail)
+      .catch(error => {
+        expect(error).toBeDefined();
+        worker.kill();
+      });
   });
 
   it("Resolved different timed workers correctly", () => {
@@ -198,6 +216,17 @@ describe("Sync worker", () => {
     expect(result).toEqual(context);
 
     worker.kill();
+  });
+
+  it("Can be cloned", async () => {
+    const worker = serial(contextFunc, { context });
+    const cloned = worker.clone();
+
+    const result = await cloned.run();
+    expect(result).toEqual(context);
+
+    worker.kill();
+    cloned.kill();
   });
 });
 
@@ -239,19 +268,37 @@ describe("Async worker", () => {
       throw new Error("Test error");
     });
 
-    return worker.run().catch(e => {
-      expect(e.message).toBe("Test error");
-      worker.kill();
-    });
+    return worker
+      .run()
+      .then(fail)
+      .catch(e => {
+        expect(e.message).toBe("Test error");
+        worker.kill();
+      });
   });
 
   it("Propagates promise rejection back to main thread", () => {
     const worker = concurrent(() => Promise.reject("Test error"));
 
-    return worker.run().catch(e => {
-      expect(e).toBe("Test error");
-      worker.kill();
-    });
+    return worker
+      .run()
+      .then(fail)
+      .catch(e => {
+        expect(e).toBe("Test error");
+        worker.kill();
+      });
+  });
+
+  it("Propogates thrown exceptions in promises back to main thread", () => {
+    const worker = concurrent(() => fetch("invalidUrl"));
+
+    return worker
+      .run()
+      .then(fail)
+      .catch(error => {
+        expect(error).toBeDefined();
+        worker.kill();
+      });
   });
 
   it("Resolved different timed workers correctly", () => {
@@ -293,5 +340,16 @@ describe("Async worker", () => {
     expect(result).toEqual(context);
 
     worker.kill();
+  });
+
+  it("Can be cloned", async () => {
+    const worker = serial(contextFunc, { context });
+    const cloned = worker.clone();
+
+    const result = await cloned.run();
+    expect(result).toEqual(context);
+
+    worker.kill();
+    cloned.kill();
   });
 });

@@ -1,5 +1,6 @@
 import {
   IResponse,
+  IWorker,
   IWorkerConfig,
   IWorkerContext,
   Reject,
@@ -68,10 +69,10 @@ export const concurrent = <
   C extends IWorkerContext,
   R
 >(
-  task: (this: WorkerThis<C>, ...args: T) => R,
+  task: ((this: WorkerThis<C>, ...args: T) => R) | string,
   config: IWorkerConfig<T, C, R> = {}
-) => {
-  const url = createWorkerUrl(task, config);
+): IWorker<T, C, R> => {
+  const url = typeof task === "string" ? task : createWorkerUrl(task, config);
   const getTransferable = config.inTransferable || noop;
 
   const run = ((args: T) => {
@@ -88,7 +89,13 @@ export const concurrent = <
 
   const kill = () => URL.revokeObjectURL(url);
 
+  /**
+   * Returns an identical copy that runs on it's own workers
+   */
+  const clone = () => concurrent(url, config);
+
   return {
+    clone,
     kill,
     run
   };
@@ -100,15 +107,15 @@ export const concurrent = <
  * This creation method uses a single web worker for all calls to it, calls will be processed synchonously
  * in that worker. Has les overhead than `create` but does not run multiple calls in paralel.
  *
- * @param task Function to execute off the main thread
+ * @param task Function to execute off the main thread, or object url pointing to worker script
  * @param context Worker context, properties of this object are available inside the worker
  * @param config Worker configuration
  */
 export const serial = <T extends Array<unknown>, C extends IWorkerContext, R>(
-  task: (this: WorkerThis<C>, ...args: T) => R,
+  task: ((this: WorkerThis<C>, ...args: T) => R) | string,
   config: IWorkerConfig<T, C, R> = {}
-) => {
-  const url = createWorkerUrl(task, config);
+): IWorker<T, C, R> => {
+  const url = typeof task === "string" ? task : createWorkerUrl(task, config);
   const worker = new Worker(url);
   const getTransferable = config.inTransferable || noop;
   let syncId = 0;
@@ -122,7 +129,14 @@ export const serial = <T extends Array<unknown>, C extends IWorkerContext, R>(
     worker.terminate();
     URL.revokeObjectURL(url);
   };
+
+  /**
+   * Returns an identical copy that runs on it's own worker
+   */
+  const clone = () => serial(url, config);
+
   return {
+    clone,
     kill,
     run
   };

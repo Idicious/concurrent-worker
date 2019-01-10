@@ -22,6 +22,12 @@ export interface IWorkerConfig<
   rootUrl?: string;
 }
 
+export interface IWorker<T extends Array<unknown>, C, R> {
+  clone: () => IWorker<T, C, R>;
+  kill: () => void;
+  run: RunFunc<T, R>;
+}
+
 export type WorkerThis<C extends IWorkerContext> = C & { rootUrl: string };
 
 export type EmptyArray<T extends Array<unknown>> = T & { length: 0 };
