@@ -11,6 +11,8 @@ declare global {
   }
 }
 
+export const noop = () => [];
+
 /**
  * Calling functions through strings makes sure that aggressive minification
  * does not break the call. The same applies to the apply call, this ensures no polyfill

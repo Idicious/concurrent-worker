@@ -1,5 +1,5 @@
-import { IWorkerConfig, IWorkerContext, noop } from "./types";
-import { getError, onmessage } from "./worker";
+import { IWorkerConfig, IWorkerContext } from "./types";
+import { getError, noop, onmessage } from "./worker";
 
 const getContextDeclaration = <T>(contextItem: T) => {
   switch (typeof contextItem) {
