@@ -31,7 +31,7 @@ export const onmessage = <T extends Array<unknown>, R>(message: Input<T>) => {
       })
       .catch(e => {
         const error = self["getError"](e);
-        postMessage([message.data[0], error, true], undefined as any);
+        postMessage([message.data[0], error, true]);
       });
   } catch (e) {
     const error = self["getError"](e);
