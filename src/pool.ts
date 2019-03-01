@@ -1,11 +1,10 @@
 import { serial } from "./task";
 import {
+  IPoolConfig,
   IWorker,
-  IWorkerConfig,
   IWorkerContext,
   RunFunc,
-  WorkerThis,
-  IPoolConfig
+  WorkerThis
 } from "./types";
 import { createWorkerUrl } from "./worker-creation";
 
