@@ -40,9 +40,9 @@ class WorkerPool<T extends Array<unknown>, C extends IWorkerContext, R> {
         reject("Workers busy, get timed out.");
       }, this.timeout);
 
-      const cb = (_: IWorker<T, C, R>) => {
+      const cb = (w: IWorker<T, C, R>) => {
         clearTimeout(timeout);
-        resolve(_);
+        resolve(w);
       };
 
       this.waiting.unshift(cb);
