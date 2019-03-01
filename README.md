@@ -1,6 +1,6 @@
 [![npm version](https://badge.fury.io/js/concurrent-worker.svg)](https://badge.fury.io/js/concurrent-worker)
 [![Build Status](https://travis-ci.org/Idicious/concurrent-worker.svg?branch=master)](https://travis-ci.org/Idicious/concurrent-worker)
-[![Coverage Status](https://coveralls.io/repos/github/Idicious/concurrent-worker/badge.svg?branch=master)](https://coveralls.io/github/Idicious/concurrent-worker?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/Idicious/concurrent-worker/badge.svg?branch=master)](https://coveralls.io/github/Idicious/concurrent-worker?branch=master) [![Greenkeeper badge](https://badges.greenkeeper.io/Idicious/concurrent-worker.svg)](https://greenkeeper.io/)
 
 # Concurrent worker
 
