@@ -11,17 +11,18 @@ describe("Pool", () => {
 
     const time = performance.now();
     const res = await Promise.all([
-      worker.run([100, 1]),
+      worker.run([500, 1]),
       worker.run([500, 10]),
-      worker.run([300, 3])
+      worker.run([500, 3])
     ]);
     const totalTime = performance.now() - time;
 
+    // Expect time to be roughly equivelent to sum
+    expect(totalTime).toBeGreaterThan(1500);
+    expect(totalTime).toBeLessThan(1700);
     expect(res).toEqual([1, 10, 3]);
 
-    // Expect time to be roughly equivelent to sum
-    expect(totalTime).toBeGreaterThan(850);
-    expect(totalTime).toBeLessThan(950);
+    worker.kill();
   });
 
   it("Concurrently runs tasks it can", async () => {
@@ -29,16 +30,50 @@ describe("Pool", () => {
 
     const time = performance.now();
     const res = await Promise.all([
-      worker.run([100, 1]),
+      worker.run([500, 1]),
       worker.run([500, 10]),
-      worker.run([300, 3])
+      worker.run([500, 3])
     ]);
     const totalTime = performance.now() - time;
 
+    // Expect time to be roughly equivelent to longest
+    expect(totalTime).toBeGreaterThan(500);
+    expect(totalTime).toBeLessThan(700);
     expect(res).toEqual([1, 10, 3]);
 
+    worker.kill();
+  });
+
+  it("Concurrently runs tasks it can and switches to new ones", async () => {
+    const worker = pool(delay, { workers: 2 });
+
+    const time = performance.now();
+    const res = await Promise.all([
+      worker.run([500, 1]),
+      worker.run([500, 10]),
+      worker.run([500, 3])
+    ]);
+    const totalTime = performance.now() - time;
+
     // Expect time to be roughly equivelent to longest
-    expect(totalTime).toBeGreaterThan(450);
-    expect(totalTime).toBeLessThan(550);
+    expect(totalTime).toBeGreaterThan(1000);
+    expect(totalTime).toBeLessThan(1200);
+    expect(res).toEqual([1, 10, 3]);
+
+    worker.kill();
+  });
+
+  it("Times out jobs that take to long to start", done => {
+    // Timeout is set shorter than first worker run time, second will timeout before starting
+    const worker = pool(delay, { workers: 1, timeout: 30 });
+
+    worker.run([100, 1]).catch(fail);
+    worker
+      .run([10, 10])
+      .then(fail)
+      .catch(_ => {
+        worker.kill();
+        done();
+      });
   });
 });
