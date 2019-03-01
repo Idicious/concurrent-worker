@@ -40,7 +40,7 @@ const createWorkerCallback = <R>(
  * Call worker with given arguments, returns a promise that resolves when onmessage is called
  * with matching syncId.
  */
-const executePromiseWorker = <T extends Array<unknown>, R>(
+export const executePromiseWorker = <T extends Array<unknown>, R>(
   worker: Worker,
   syncId: number,
   args: T,
