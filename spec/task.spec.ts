@@ -199,9 +199,10 @@ describe("Workers", () => {
         return await worker.kill();
       });
 
-      // tslint:disable-next-line:prefer-const
-      let _: any;
       it("Loads an external script", async () => {
+        // tslint:disable-next-line:prefer-const
+        let _: any;
+
         const worker = workerType(
           (x: number) => {
             return _.map([x], (n: number) => n ** n);
@@ -218,6 +219,9 @@ describe("Workers", () => {
       });
 
       it("Loads a mix of local and external scripts", async () => {
+        // tslint:disable-next-line:prefer-const
+        let _: any;
+
         const worker = workerType(
           (x: number) => {
             const summed = sum(x, x);
