@@ -4,41 +4,47 @@ import {
   IWorkerConfig,
   IWorkerContext,
   RunFunc,
-  WorkerThis
+  WorkerThis,
+  IPoolConfig
 } from "./types";
 import { createWorkerUrl } from "./worker-creation";
 
+const defaultConcurrency = self.navigator.hardwareConcurrency || 4;
+const defaultTimeout = 1000 * 60;
+
 class WorkerPool<T extends Array<unknown>, C extends IWorkerContext, R> {
   private workers: Array<IWorker<T, C, R>> = [];
+  private busy: Array<IWorker<T, C, R>> = [];
+
   private waiting: Array<(worker: IWorker<T, C, R>) => void> = [];
 
   constructor(
-    size: number,
-    task: ((this: WorkerThis<C>, ...args: T) => R) | string,
-    config: IWorkerConfig<T, C, R> = {},
-    private timeout: number = 1000 * 60
+    private task: ((this: WorkerThis<C>, ...args: T) => R) | string,
+    private config: IPoolConfig<T, C, R> = {}
   ) {
     const url = typeof task === "string" ? task : createWorkerUrl(task, config);
-    for (let i = 0; i < size; i++) {
-      this.workers.push(serial(url));
+    const workers = (config && config.workers) || defaultConcurrency;
+    for (let i = 0; i < workers; i++) {
+      this.workers.push(serial(url, config));
     }
   }
 
   public get(): Promise<IWorker<T, C, R>> {
     const worker = this.workers.pop();
     if (worker != null) {
+      this.busy.push(worker);
       return Promise.resolve(worker);
     }
 
     return new Promise<IWorker<T, C, R>>((resolve, reject) => {
       const timeout = setTimeout(() => {
-        const cbIndex = this.waiting.indexOf(cb);
-        if (cbIndex !== -1) {
-          this.waiting.splice(cbIndex, 1);
+        const index = this.waiting.indexOf(cb);
+        if (index !== -1) {
+          this.waiting.splice(index, 1);
         }
 
-        reject("Workers busy, get timed out.");
-      }, this.timeout);
+        reject(`No workers available, timeout of ${timeout}ms exceeded.`);
+      }, (this.config && this.config.timeout) || defaultTimeout);
 
       const cb = (w: IWorker<T, C, R>) => {
         clearTimeout(timeout);
@@ -54,20 +60,26 @@ class WorkerPool<T extends Array<unknown>, C extends IWorkerContext, R> {
     if (next) {
       next(worker);
     } else {
+      const index = this.busy.indexOf(worker);
+      if (index !== -1) {
+        this.busy.splice(index, 1);
+      }
+
       this.workers.push(worker);
     }
   }
 
   public kill() {
     this.workers.forEach(worker => worker.kill());
+    this.busy.forEach(worker => worker.kill());
   }
 }
 
 export const pool = <T extends Array<unknown>, C extends IWorkerContext, R>(
   task: ((this: WorkerThis<C>, ...args: T) => R) | string,
-  config: IWorkerConfig<T, C, R> = {}
+  config: IPoolConfig<T, C, R> = {}
 ): IWorker<T, C, R> => {
-  const workerPool = new WorkerPool(4, task, config);
+  const workerPool = new WorkerPool(task, config);
 
   const run = ((args: T) => {
     return workerPool.get().then(worker =>

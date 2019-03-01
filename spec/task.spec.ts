@@ -1,5 +1,5 @@
+import { pool } from "../src/pool";
 import { concurrent, serial } from "../src/task";
-import { IWorkerConfig } from "../src/types";
 
 const context = {
   a: "a",
@@ -59,297 +59,181 @@ describe("Call chains", () => {
   });
 });
 
-describe("Script loading", () => {
-  it("Loads a script from base url", async () => {
-    const worker = serial(
-      (x: number) => {
-        return sum(x, x);
-      },
-      { rootUrl, scripts: [sumScript] }
-    );
+describe("Workers", () => {
+  const workers = [
+    { name: "Serial", workerType: serial },
+    { name: "Concurrent", workerType: concurrent },
+    { name: "Pool", workerType: pool }
+  ];
 
-    const result = await worker.run([5]);
-    expect(result).toBe(10);
+  workers.forEach(({ name, workerType }) => {
+    describe(name, () => {
+      it("Creates a simple worker", async () => {
+        const worker = workerType(sum);
+        const result = await worker.run([1, 2]);
 
-    worker.kill();
-  });
+        expect(result).toBe(3);
+        return await worker.kill();
+      });
 
-  // tslint:disable-next-line:prefer-const
-  let _: any;
-  it("Loads an external script", async () => {
-    const worker = serial(
-      (x: number) => {
-        return _.map([x], (n: number) => n ** n);
-      },
-      {
-        scripts: [lodashScript]
-      }
-    );
+      it("Resolves a promise", async () => {
+        const worker = workerType(promise);
+        const result = await worker.run([5]);
 
-    const result = await worker.run([5]);
-    expect(result).toEqual([3125]);
+        expect(result).toBe(5);
+        return await worker.kill();
+      });
 
-    worker.kill();
-  });
+      it("Can use a function as context", async () => {
+        const worker = workerType(
+          function(x: number) {
+            const y = this.sum(x, 5);
+            return this.square(y);
+          },
+          {
+            context: { sum, square }
+          }
+        );
+        const result = await worker.run([5]);
 
-  it("Loads a mix of local and external scripts", async () => {
-    const worker = serial(
-      (x: number) => {
-        const summed = sum(x, x);
-        return _.map([summed], (n: number) => n ** n);
-      },
-      {
-        rootUrl,
-        scripts: [sumScript, lodashScript]
-      }
-    );
+        expect(result).toBe(100);
+        return await worker.kill();
+      });
 
-    const result = await worker.run([2]);
-    expect(result).toEqual([256]);
+      it("Propagates thrown exception back to main thread", () => {
+        const worker = workerType(() => {
+          throw new Error("Test error");
+        });
 
-    worker.kill();
-  });
-});
+        return worker
+          .run()
+          .then(fail)
+          .catch(error => {
+            expect(error.message).toBe("Test error");
+            worker.kill();
+          });
+      });
 
-describe("Sync worker", () => {
-  it("Creates a simple worker", async () => {
-    const worker = serial(sum);
-    const result = await worker.run([1, 2]);
+      it("Propogates promise rejection back to main thread", () => {
+        const worker = workerType(() => Promise.reject("Test error"));
 
-    expect(result).toBe(3);
-    worker.kill();
-  });
+        return worker
+          .run()
+          .then(fail)
+          .catch(error => {
+            expect(error).toBe("Test error");
+            worker.kill();
+          });
+      });
 
-  it("Resolves a promise", async () => {
-    const worker = serial(promise);
-    const result = await worker.run([5]);
+      it("Propogates thrown exceptions in promises back to main thread", () => {
+        const worker = workerType(() => fetch("invalidUrl"));
 
-    expect(result).toBe(5);
-    worker.kill();
-  });
+        return worker
+          .run()
+          .then(fail)
+          .catch(error => {
+            expect(error).toBeDefined();
+            worker.kill();
+          });
+      });
 
-  it("Can use a function as context", async () => {
-    const worker = serial(
-      function(x: number) {
-        const y = this.sum(x, 5);
-        return this.square(y);
-      },
-      {
-        context: { sum, square }
-      }
-    );
-    const result = await worker.run([5]);
+      it("Resolved different timed workers correctly", () => {
+        const worker = workerType(delayedPromise);
 
-    expect(result).toBe(100);
-    worker.kill();
-  });
+        const long = worker.run([50]);
+        const short = worker.run([10]);
 
-  it("Propagates thrown exception back to main thread", () => {
-    const worker = serial(() => {
-      throw new Error("Test error");
+        return Promise.all([long, short]).then(([longRes, shortRes]) => {
+          expect(longRes).toBe(50);
+          expect(shortRes).toBe(10);
+
+          worker.kill();
+        });
+      });
+
+      it("Works with transferables", async () => {
+        const worker = workerType(transferrableFunc, {
+          inTransferable: ([_, arr]) => [arr.buffer],
+          outTransferable: res => [res.buffer]
+        });
+
+        const inputArr = new Float32Array([1, 2, 3, 4, 5]);
+        const result = await worker.run([5, inputArr]);
+
+        expect(result).toEqual(new Float32Array([5, 10, 15, 20, 25]));
+        await worker.kill();
+      });
+
+      it("Handles differt context types", async () => {
+        const worker = workerType(contextFunc, { context });
+
+        const result = await worker.run();
+        expect(result).toEqual(context);
+
+        await worker.kill();
+      });
+
+      it("Can be cloned", async () => {
+        const worker = workerType(contextFunc, { context });
+        const cloned = worker.clone();
+
+        const result = await cloned.run();
+        expect(result).toEqual(context);
+
+        await worker.kill();
+        await cloned.kill();
+      });
+
+      it("Loads a script from base url", async () => {
+        const worker = workerType(
+          (x: number) => {
+            return sum(x, x);
+          },
+          { rootUrl, scripts: [sumScript] }
+        );
+
+        const result = await worker.run([5]);
+        expect(result).toBe(10);
+
+        return await worker.kill();
+      });
+
+      // tslint:disable-next-line:prefer-const
+      let _: any;
+      it("Loads an external script", async () => {
+        const worker = workerType(
+          (x: number) => {
+            return _.map([x], (n: number) => n ** n);
+          },
+          {
+            scripts: [lodashScript]
+          }
+        );
+
+        const result = await worker.run([5]);
+        expect(result).toEqual([3125]);
+
+        return await worker.kill();
+      });
+
+      it("Loads a mix of local and external scripts", async () => {
+        const worker = workerType(
+          (x: number) => {
+            const summed = sum(x, x);
+            return _.map([summed], (n: number) => n ** n);
+          },
+          {
+            rootUrl,
+            scripts: [sumScript, lodashScript]
+          }
+        );
+
+        const result = await worker.run([2]);
+        expect(result).toEqual([256]);
+
+        return await worker.kill();
+      });
     });
-
-    return worker
-      .run()
-      .then(fail)
-      .catch(error => {
-        expect(error.message).toBe("Test error");
-        worker.kill();
-      });
-  });
-
-  it("Propogates promise rejection back to main thread", () => {
-    const worker = serial(() => Promise.reject("Test error"));
-
-    return worker
-      .run()
-      .then(fail)
-      .catch(error => {
-        expect(error).toBe("Test error");
-        worker.kill();
-      });
-  });
-
-  it("Propogates thrown exceptions in promises back to main thread", () => {
-    const worker = serial(() => fetch("invalidUrl"));
-
-    return worker
-      .run()
-      .then(fail)
-      .catch(error => {
-        expect(error).toBeDefined();
-        worker.kill();
-      });
-  });
-
-  it("Resolved different timed workers correctly", () => {
-    const worker = serial(delayedPromise);
-
-    const long = worker.run([50]);
-    const short = worker.run([10]);
-
-    return Promise.all([long, short]).then(([longRes, shortRes]) => {
-      expect(longRes).toBe(50);
-      expect(shortRes).toBe(10);
-
-      worker.kill();
-    });
-  });
-
-  it("Works with transferables", async () => {
-    const worker = serial(transferrableFunc, {
-      inTransferable: ([_, arr]) => [arr.buffer],
-      outTransferable: res => [res.buffer]
-    });
-
-    const inputArr = new Float32Array([1, 2, 3, 4, 5]);
-    const result = await worker.run([5, inputArr]);
-
-    expect(result).toEqual(new Float32Array([5, 10, 15, 20, 25]));
-    worker.kill();
-  });
-
-  it("Handles differt context types", async () => {
-    const worker = serial(contextFunc, { context });
-
-    const result = await worker.run();
-    expect(result).toEqual(context);
-
-    worker.kill();
-  });
-
-  it("Can be cloned", async () => {
-    const worker = serial(contextFunc, { context });
-    const cloned = worker.clone();
-
-    const result = await cloned.run();
-    expect(result).toEqual(context);
-
-    worker.kill();
-    cloned.kill();
-  });
-});
-
-describe("Async worker", () => {
-  it("Creates a simple worker", async () => {
-    const worker = concurrent(sum);
-    const result = await worker.run([1, 2]);
-
-    expect(result).toBe(3);
-    worker.kill();
-  });
-
-  it("Resolves a promise", async () => {
-    const worker = concurrent(promise);
-    const result = await worker.run([5]);
-
-    expect(result).toBe(5);
-    worker.kill();
-  });
-
-  it("Can use a function as context", async () => {
-    const worker = concurrent(
-      function(x: number) {
-        const y = this.sum(x, 5);
-        return this.square(y);
-      },
-      {
-        context: { sum, square }
-      }
-    );
-    const result = await worker.run([5]);
-
-    expect(result).toBe(100);
-    worker.kill();
-  });
-
-  it("Propogates thrown exception back to main thread", () => {
-    const worker = concurrent(() => {
-      throw new Error("Test error");
-    });
-
-    return worker
-      .run()
-      .then(fail)
-      .catch(e => {
-        expect(e.message).toBe("Test error");
-        worker.kill();
-      });
-  });
-
-  it("Propagates promise rejection back to main thread", () => {
-    const worker = concurrent(() => Promise.reject("Test error"));
-
-    return worker
-      .run()
-      .then(fail)
-      .catch(e => {
-        expect(e).toBe("Test error");
-        worker.kill();
-      });
-  });
-
-  it("Propogates thrown exceptions in promises back to main thread", () => {
-    const worker = concurrent(() => fetch("invalidUrl"));
-
-    return worker
-      .run()
-      .then(fail)
-      .catch(error => {
-        expect(error).toBeDefined();
-        worker.kill();
-      });
-  });
-
-  it("Resolved different timed workers correctly", () => {
-    const worker = concurrent(delayedPromise);
-
-    const long = worker.run([50]);
-    const short = worker.run([10]);
-
-    return Promise.all([long, short]).then(([longRes, shortRes]) => {
-      expect(longRes).toBe(50);
-      expect(shortRes).toBe(10);
-
-      worker.kill();
-    });
-  });
-
-  it("Works with transferables", async () => {
-    const options: IWorkerConfig<[number, Float32Array], {}, Float32Array> = {
-      inTransferable: ([_, arr]) => [arr.buffer],
-      outTransferable: res => [res.buffer]
-    };
-
-    spyOn(options, "inTransferable").and.callThrough();
-
-    const worker = concurrent(transferrableFunc, options);
-
-    const inputArr = new Float32Array([1, 2, 3, 4, 5]);
-    const result = await worker.run([5, inputArr]);
-
-    expect(options.inTransferable).toHaveBeenCalledWith([5, inputArr]);
-    expect(result).toEqual(new Float32Array([5, 10, 15, 20, 25]));
-    worker.kill();
-  });
-
-  it("Handles differt context types", async () => {
-    const worker = serial(contextFunc, { context });
-
-    const result = await worker.run();
-    expect(result).toEqual(context);
-
-    worker.kill();
-  });
-
-  it("Can be cloned", async () => {
-    const worker = serial(contextFunc, { context });
-    const cloned = worker.clone();
-
-    const result = await cloned.run();
-    expect(result).toEqual(context);
-
-    worker.kill();
-    cloned.kill();
   });
 });

@@ -37,11 +37,13 @@ const getScriptImport = (scripts?: string[], rootUrl: string = "") =>
 
 const getScript = <T extends Array<unknown>, C extends IWorkerContext, R>(
   execute: (...args: T) => R,
-  config: IWorkerConfig<T, C, R>
+  config: IWorkerConfig<T, C, R>,
+  terminateOnError: boolean
 ) =>
   `
 ${getScriptImport(config.scripts, config.rootUrl)}
 ${getContextString(config.context)}
+self.terminateOnError = ${terminateOnError};
 self.rootUrl = '${config.rootUrl}';
 self.getError = ${getError};
 self.getTransferrables = ${config.outTransferable || noop};
@@ -55,9 +57,10 @@ export const createWorkerUrl = <
   R
 >(
   execute: (...args: T) => R,
-  config: IWorkerConfig<T, C, R>
+  config: IWorkerConfig<T, C, R>,
+  terminateOnError = false
 ): string => {
-  const script = getScript(execute, config);
+  const script = getScript(execute, config, terminateOnError);
   const blob = new Blob([script], { type: "application/javascript" });
 
   return URL.createObjectURL(blob);

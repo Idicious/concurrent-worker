@@ -72,7 +72,8 @@ export const concurrent = <
   task: ((this: WorkerThis<C>, ...args: T) => R) | string,
   config: IWorkerConfig<T, C, R> = {}
 ): IWorker<T, C, R> => {
-  const url = typeof task === "string" ? task : createWorkerUrl(task, config);
+  const url =
+    typeof task === "string" ? task : createWorkerUrl(task, config, true);
   const getTransferable = config.inTransferable || noop;
 
   const run = ((args: T) => {
@@ -87,7 +88,9 @@ export const concurrent = <
     );
   }) as RunFunc<T, R>;
 
-  const kill = () => URL.revokeObjectURL(url);
+  const kill = () => {
+    URL.revokeObjectURL(url);
+  };
 
   /**
    * Returns an identical copy that runs on it's own workers

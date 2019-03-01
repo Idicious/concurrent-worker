@@ -22,6 +22,15 @@ export interface IWorkerConfig<
   rootUrl?: string;
 }
 
+export interface IPoolConfig<
+  T extends Array<unknown>,
+  C extends IWorkerContext,
+  R
+> extends IWorkerConfig<T, C, R> {
+  workers?: number;
+  timeout?: number;
+}
+
 export interface IWorker<T extends Array<unknown>, C, R> {
   clone: () => IWorker<T, C, R>;
   kill: () => void;

@@ -5,6 +5,7 @@ import { Input } from "./types";
 
 declare global {
   interface WorkerGlobalScope {
+    terminateOnError: boolean;
     run<T extends Array<unknown>, R>(...args: T): R;
     getTransferrables<T>(val: T): Transferable[];
     getError(e: any): any;
@@ -22,21 +23,21 @@ export const noop = () => [];
  * @param message
  */
 export const onmessage = <T extends Array<unknown>, R>(message: Input<T>) => {
-  try {
-    const res = self["run"].apply<null, T, R>(null, message.data[1]);
-    Promise.resolve(res)
-      .then(result => {
-        const transferrable = self["getTransferrables"]<R>(result);
-        postMessage([message.data[0], result, false], transferrable);
-      })
-      .catch(e => {
-        const error = self["getError"](e);
-        postMessage([message.data[0], error, true]);
-      });
-  } catch (e) {
-    const error = self["getError"](e);
-    postMessage([message.data[0], error, true]);
-  }
+  return new Promise<R>(resolve => {
+    resolve(self["run"].apply<null, T, R>(null, message.data[1]));
+  })
+    .then(result => {
+      const transferrable = self["getTransferrables"]<R>(result);
+      postMessage([message.data[0], result, false], transferrable);
+    })
+    .catch(e => {
+      const error = self["getError"](e);
+      postMessage([message.data[0], error, true]);
+
+      if (self["terminateOnError"]) {
+        close();
+      }
+    });
 };
 
 export const getError = (e: any) => {
