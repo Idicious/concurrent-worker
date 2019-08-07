@@ -61,7 +61,6 @@ export const executePromiseWorker = <T extends Array<unknown>, R>(
  * This creation method creates a new web worker for each call to it allowing multiple calls to run in paralel.
  *
  * @param task Function to execute off the main thread
- * @param context Worker context, properties of this object are available inside the worker
  * @param config Worker configuration
  */
 export const concurrent = <
@@ -107,11 +106,10 @@ export const concurrent = <
 /**
  * Creates a task that can be run in a webworker. If you want to use functions and variables from
  * the outer scope you must pass them in via the context parameter, else they will not be available.
- * This creation method uses a single web worker for all calls to it, calls will be processed synchonously
+ * This creation method uses a single web worker for all calls to it, calls will be processed synchronously
  * in that worker. Has les overhead than `create` but does not run multiple calls in paralel.
  *
  * @param task Function to execute off the main thread, or object url pointing to worker script
- * @param context Worker context, properties of this object are available inside the worker
  * @param config Worker configuration
  */
 export const serial = <T extends Array<unknown>, C extends IWorkerContext, R>(
