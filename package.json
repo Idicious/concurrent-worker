@@ -29,6 +29,9 @@
   "files": [
     "dist"
   ],
+  "dependencies": {
+    "tslib": "^1.10.0"
+  },
   "devDependencies": {
     "@types/jasmine": "3.3.11",
     "coveralls": "^3.0.2",
