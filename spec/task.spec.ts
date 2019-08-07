@@ -209,7 +209,7 @@ describe("Sync worker", () => {
     worker.kill();
   });
 
-  it("Handles differt context types", async () => {
+  it("Handles different context types", async () => {
     const worker = serial(contextFunc, { context });
 
     const result = await worker.run();
