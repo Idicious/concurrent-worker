@@ -165,7 +165,7 @@ describe("Workers", () => {
         await worker.kill();
       });
 
-      it("Handles differt context types", async () => {
+      it("Handles different context types", async () => {
         const worker = workerType(contextFunc, { context });
 
         const result = await worker.run();
