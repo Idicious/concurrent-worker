@@ -44,7 +44,7 @@ const executePromiseWorker = <T extends Array<unknown>, R>(
   worker: Worker,
   syncId: number,
   args: T,
-  transferrable?: Transferable[]
+  transferrable: Transferable[] = []
 ) =>
   new Promise<ThenArg<R>>((resolve, reject) => {
     worker.addEventListener(

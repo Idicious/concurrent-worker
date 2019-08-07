@@ -10,8 +10,6 @@
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "declaration": true,
-    "declarationDir": "./typings",
-    "alwaysStrict": false,
-    "noImplicitUseStrict": true
+    "declarationDir": "./typings"
   }
 }
