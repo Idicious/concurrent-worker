@@ -41,7 +41,7 @@
     "karma-coveralls": "^2.1.0",
     "karma-firefox-launcher": "^1.1.0",
     "karma-jasmine": "^2.0.1",
-    "karma-typescript": "^4.0.0",
+    "karma-typescript": "^5.0.0",
     "rollup": "^1.19.4",
     "rollup-plugin-typescript": "^1.0.1",
     "tslib": "^1.10.0",
