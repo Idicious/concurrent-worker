@@ -6,16 +6,16 @@ const context = {
   b: 5,
   c: true,
   d: {
-    deep: "a"
-  }
+    deep: "a",
+  },
 };
 
-const contextFunc = function(this: typeof context) {
+const contextFunc = function (this: typeof context) {
   return {
     a: this.a,
     b: this.b,
     c: this.c,
-    d: this.d
+    d: this.d,
   };
 };
 
@@ -29,12 +29,13 @@ const sum = (x: number, y: number) => x + y;
 const promise = (x: number) => Promise.resolve(x);
 
 const delayedPromise = (ms: number) => {
-  return new Promise<number>(resolve => {
+  return new Promise<number>((resolve) => {
     setTimeout(() => resolve(ms), ms);
   });
 };
 
-const transferrableFunc = (n: number, arr: Float32Array) => arr.map(x => x * n);
+const transferrableFunc = (n: number, arr: Float32Array) =>
+  arr.map((x) => x * n);
 
 describe("Call chains", () => {
   it("Handles combinations of sync and async workers in a promise chain", () => {
@@ -42,14 +43,14 @@ describe("Call chains", () => {
     const asyncWorkerA = concurrent(delayedPromise);
     const asyncWorkerB = concurrent(transferrableFunc, {
       inTransferable: ([_, arr]) => [arr.buffer],
-      outTransferable: res => [res.buffer]
+      outTransferable: (res) => [res.buffer],
     });
 
     return syncWorker
       .run([1, 2])
-      .then(res => asyncWorkerA.run([res]))
-      .then(res => asyncWorkerB.run([res, new Float32Array([res])]))
-      .then(res => {
+      .then((res) => asyncWorkerA.run([res]))
+      .then((res) => asyncWorkerB.run([res, new Float32Array([res])]))
+      .then((res) => {
         expect(res).toEqual(new Float32Array([9]));
 
         syncWorker.kill();
@@ -63,7 +64,7 @@ describe("Workers", () => {
   const workers = [
     { name: "Serial", workerType: serial },
     { name: "Concurrent", workerType: concurrent },
-    { name: "Pool", workerType: pool }
+    { name: "Pool", workerType: pool },
   ];
 
   workers.forEach(({ name, workerType }) => {
@@ -86,12 +87,12 @@ describe("Workers", () => {
 
       it("Can use a function as context", async () => {
         const worker = workerType(
-          function(x: number) {
+          function (x: number) {
             const y = this.sum(x, 5);
             return this.square(y);
           },
           {
-            context: { sum, square }
+            context: { sum, square },
           }
         );
         const result = await worker.run([5]);
@@ -108,7 +109,7 @@ describe("Workers", () => {
         return worker
           .run()
           .then(fail)
-          .catch(error => {
+          .catch((error) => {
             expect(error.message).toBe("Test error");
             worker.kill();
           });
@@ -120,7 +121,7 @@ describe("Workers", () => {
         return worker
           .run()
           .then(fail)
-          .catch(error => {
+          .catch((error) => {
             expect(error).toBe("Test error");
             worker.kill();
           });
@@ -132,7 +133,7 @@ describe("Workers", () => {
         return worker
           .run()
           .then(fail)
-          .catch(error => {
+          .catch((error) => {
             expect(error).toBeDefined();
             worker.kill();
           });
@@ -155,7 +156,7 @@ describe("Workers", () => {
       it("Works with transferables", async () => {
         const worker = workerType(transferrableFunc, {
           inTransferable: ([_, arr]) => [arr.buffer],
-          outTransferable: res => [res.buffer]
+          outTransferable: (res) => [res.buffer],
         });
 
         const inputArr = new Float32Array([1, 2, 3, 4, 5]);
@@ -200,7 +201,6 @@ describe("Workers", () => {
       });
 
       it("Loads an external script", async () => {
-        // tslint:disable-next-line:prefer-const
         let _: any;
 
         const worker = workerType(
@@ -208,7 +208,7 @@ describe("Workers", () => {
             return _.map([x], (n: number) => n ** n);
           },
           {
-            scripts: [lodashScript]
+            scripts: [lodashScript],
           }
         );
 
@@ -219,7 +219,6 @@ describe("Workers", () => {
       });
 
       it("Loads a mix of local and external scripts", async () => {
-        // tslint:disable-next-line:prefer-const
         let _: any;
 
         const worker = workerType(
@@ -229,7 +228,7 @@ describe("Workers", () => {
           },
           {
             rootUrl,
-            scripts: [sumScript, lodashScript]
+            scripts: [sumScript, lodashScript],
           }
         );
 

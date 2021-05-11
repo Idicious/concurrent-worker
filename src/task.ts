@@ -7,7 +7,7 @@ import {
   Resolve,
   RunFunc,
   ThenArg,
-  WorkerThis
+  WorkerThis,
 } from "./types";
 import { noop } from "./worker";
 import { createWorkerUrl } from "./worker-creation";
@@ -73,18 +73,13 @@ export const concurrent = <
 ): IWorker<T, C, R> => {
   const url =
     typeof task === "string" ? task : createWorkerUrl(task, config, true);
-  const getTransferable = config.inTransferable || noop;
+  const getTransferable = config.inTransferable ?? noop;
 
   const run = ((args: T) => {
     const worker = new Worker(url);
     const transferable = getTransferable(args);
 
-    return executePromiseWorker<T, R>(worker, -1, args, transferable).then(
-      result => {
-        worker.terminate();
-        return result;
-      }
-    );
+    return executePromiseWorker<T, R>(worker, -1, args, transferable);
   }) as RunFunc<T, R>;
 
   const kill = () => {
@@ -99,7 +94,7 @@ export const concurrent = <
   return {
     clone,
     kill,
-    run
+    run,
   };
 };
 
@@ -118,7 +113,7 @@ export const serial = <T extends Array<unknown>, C extends IWorkerContext, R>(
 ): IWorker<T, C, R> => {
   const url = typeof task === "string" ? task : createWorkerUrl(task, config);
   const worker = new Worker(url);
-  const getTransferable = config.inTransferable || noop;
+  const getTransferable = config.inTransferable ?? noop;
   let syncId = 0;
 
   const run = ((args: T) => {
@@ -139,6 +134,6 @@ export const serial = <T extends Array<unknown>, C extends IWorkerContext, R>(
   return {
     clone,
     kill,
-    run
+    run,
   };
 };

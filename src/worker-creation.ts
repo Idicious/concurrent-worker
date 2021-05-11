@@ -18,7 +18,7 @@ const getContextDeclaration = <T>(contextItem: T) => {
 const getContextString = (context?: IWorkerContext) =>
   context
     ? Object.keys(context)
-        .map(key => `this.${key} = ${getContextDeclaration(context[key])}`)
+        .map((key) => `this.${key} = ${getContextDeclaration(context[key])}`)
         .join(`;\r\n\r\n`)
     : "";
 
@@ -27,9 +27,9 @@ const isUrlRelative = (url: string) => {
 };
 
 const getScriptImport = (scripts?: string[], rootUrl: string = "") =>
-  scripts && scripts.length > 0
+  scripts != null && scripts.length > 0
     ? `importScripts(${scripts
-        .map(script =>
+        .map((script) =>
           isUrlRelative(script) ? `"${rootUrl}${script}"` : `"${script}"`
         )
         .join(",")});`
@@ -38,15 +38,15 @@ const getScriptImport = (scripts?: string[], rootUrl: string = "") =>
 const getScript = <T extends Array<unknown>, C extends IWorkerContext, R>(
   execute: (...args: T) => R,
   config: IWorkerConfig<T, C, R>,
-  terminateOnError: boolean
+  terminateOnCompletion: boolean
 ) =>
   `
 ${getScriptImport(config.scripts, config.rootUrl)}
 ${getContextString(config.context)}
-self.terminateOnError = ${terminateOnError};
+self.terminateOnCompletion = ${terminateOnCompletion};
 self.rootUrl = '${config.rootUrl}';
 self.getError = ${getError};
-self.getTransferrables = ${config.outTransferable || noop};
+self.getTransferrables = ${config.outTransferable ?? noop};
 self.run = ${execute};
 self.onmessage = ${onmessage};
 `.trim();
@@ -58,9 +58,9 @@ export const createWorkerUrl = <
 >(
   execute: (...args: T) => R,
   config: IWorkerConfig<T, C, R>,
-  terminateOnError = false
+  terminateOnCompletion = false
 ): string => {
-  const script = getScript(execute, config, terminateOnError);
+  const script = getScript(execute, config, terminateOnCompletion);
   const blob = new Blob([script], { type: "application/javascript" });
 
   return URL.createObjectURL(blob);

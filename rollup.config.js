@@ -21,12 +21,12 @@ export default {
   output: {
     file: `dist/index.${extension}`,
     format,
-    name: "Task"
+    name: "Task",
   },
   plugins: [
     ts({
       typescript,
-      emitDeclarationOnly: false
-    })
-  ]
+      emitDeclarationOnly: false,
+    }),
+  ],
 };

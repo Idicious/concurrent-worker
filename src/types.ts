@@ -50,12 +50,12 @@ export type RunFunc<T extends Array<unknown>, R> = UnknownFunc<
   ThenPromise<R>
 >;
 
-export type Resolve<T> = (val: ThenArg<T> | ThenPromise<T> | undefined) => void;
+export type Resolve<T> = (val: ThenArg<T> | PromiseLike<ThenArg<T>>) => void;
 
 export type Reject = (error: any) => void;
 
 // AWSOME CONDITIONAL PROMISE TYPE UNWRAPPING
 // TAKEN FROM https://stackoverflow.com/questions/48011353/how-to-unwrap-type-of-a-promise
-export type ThenArg<T> = T extends Promise<infer U> ? U : T;
+export type ThenArg<T> = T extends Promise<infer U> ? ThenArg<U> : T;
 
 export type ThenPromise<T> = Promise<ThenArg<T>>;

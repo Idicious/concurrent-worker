@@ -1,7 +1,7 @@
 import { pool } from "../src/pool";
 
 const delay = <T>(ms: number, val: T) =>
-  new Promise<T>(resolve => {
+  new Promise<T>((resolve) => {
     setTimeout(() => resolve(val), ms);
   });
 
@@ -13,7 +13,7 @@ describe("Pool", () => {
     const res = await Promise.all([
       worker.run([500, 1]),
       worker.run([500, 10]),
-      worker.run([500, 3])
+      worker.run([500, 3]),
     ]);
     const totalTime = performance.now() - time;
 
@@ -32,7 +32,7 @@ describe("Pool", () => {
     const res = await Promise.all([
       worker.run([500, 1]),
       worker.run([500, 10]),
-      worker.run([500, 3])
+      worker.run([500, 3]),
     ]);
     const totalTime = performance.now() - time;
 
@@ -51,7 +51,7 @@ describe("Pool", () => {
     const res = await Promise.all([
       worker.run([500, 1]),
       worker.run([500, 10]),
-      worker.run([500, 3])
+      worker.run([500, 3]),
     ]);
     const totalTime = performance.now() - time;
 
@@ -63,7 +63,7 @@ describe("Pool", () => {
     worker.kill();
   });
 
-  it("Times out jobs that take to long to start", done => {
+  it("Times out jobs that take to long to start", (done) => {
     // Timeout is set shorter than first worker run time, second will timeout before starting
     const worker = pool(delay, { workers: 1, timeout: 30 });
 
@@ -71,7 +71,7 @@ describe("Pool", () => {
     worker
       .run([10, 10])
       .then(fail)
-      .catch(_ => {
+      .catch((_) => {
         worker.kill();
         done();
       });
