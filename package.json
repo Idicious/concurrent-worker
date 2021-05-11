@@ -1,6 +1,6 @@
 {
   "name": "concurrent-worker",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "Multithreading for javascript",
   "main": "./dist/index.js",
   "esnext": "./dist/index.es.js",
