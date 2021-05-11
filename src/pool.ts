@@ -36,17 +36,18 @@ class WorkerPool<T extends Array<unknown>, C extends IWorkerContext, R> {
     }
 
     return new Promise<IWorker<T, C, R>>((resolve, reject) => {
-      const timeout = setTimeout(() => {
+      const timeout = this.config?.timeout ?? defaultTimeout;
+      const timeoutRef = setTimeout(() => {
         const index = this.waiting.indexOf(cb);
         if (index !== -1) {
           this.waiting.splice(index, 1);
         }
 
         reject(`No workers available, timeout of ${timeout}ms exceeded.`);
-      }, this.config?.timeout ?? defaultTimeout);
+      }, timeout);
 
       const cb = (w: IWorker<T, C, R>) => {
-        clearTimeout(timeout);
+        clearTimeout(timeoutRef);
         resolve(w);
       };
 
