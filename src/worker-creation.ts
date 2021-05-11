@@ -26,7 +26,7 @@ const isUrlRelative = (url: string) => {
   return url.indexOf("://") === -1 && url.indexOf("//") === -1;
 };
 
-const getScriptImport = (scripts?: string[], rootUrl: string = "") =>
+const getScriptImport = (scripts?: string[], rootUrl = "") =>
   scripts != null && scripts.length > 0
     ? `importScripts(${scripts
         .map((script) =>
