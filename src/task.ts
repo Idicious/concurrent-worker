@@ -7,7 +7,7 @@ import {
   Resolve,
   RunFunc,
   ThenArg,
-  WorkerThis
+  WorkerThis,
 } from "./types";
 import { noop } from "./worker";
 import { createWorkerUrl } from "./worker-creation";
@@ -40,7 +40,7 @@ const createWorkerCallback = <R>(
  * Call worker with given arguments, returns a promise that resolves when onmessage is called
  * with matching syncId.
  */
-const executePromiseWorker = <T extends Array<unknown>, R>(
+export const executePromiseWorker = <T extends Array<unknown>, R>(
   worker: Worker,
   syncId: number,
   args: T,
@@ -61,7 +61,6 @@ const executePromiseWorker = <T extends Array<unknown>, R>(
  * This creation method creates a new web worker for each call to it allowing multiple calls to run in paralel.
  *
  * @param task Function to execute off the main thread
- * @param context Worker context, properties of this object are available inside the worker
  * @param config Worker configuration
  */
 export const concurrent = <
@@ -72,22 +71,20 @@ export const concurrent = <
   task: ((this: WorkerThis<C>, ...args: T) => R) | string,
   config: IWorkerConfig<T, C, R> = {}
 ): IWorker<T, C, R> => {
-  const url = typeof task === "string" ? task : createWorkerUrl(task, config);
-  const getTransferable = config.inTransferable || noop;
+  const url =
+    typeof task === "string" ? task : createWorkerUrl(task, config, true);
+  const getTransferable = config.inTransferable ?? noop;
 
   const run = ((args: T) => {
     const worker = new Worker(url);
     const transferable = getTransferable(args);
 
-    return executePromiseWorker<T, R>(worker, -1, args, transferable).then(
-      result => {
-        worker.terminate();
-        return result;
-      }
-    );
+    return executePromiseWorker<T, R>(worker, -1, args, transferable);
   }) as RunFunc<T, R>;
 
-  const kill = () => URL.revokeObjectURL(url);
+  const kill = () => {
+    URL.revokeObjectURL(url);
+  };
 
   /**
    * Returns an identical copy that runs on it's own workers
@@ -97,18 +94,17 @@ export const concurrent = <
   return {
     clone,
     kill,
-    run
+    run,
   };
 };
 
 /**
  * Creates a task that can be run in a webworker. If you want to use functions and variables from
  * the outer scope you must pass them in via the context parameter, else they will not be available.
- * This creation method uses a single web worker for all calls to it, calls will be processed synchonously
+ * This creation method uses a single web worker for all calls to it, calls will be processed synchronously
  * in that worker. Has les overhead than `create` but does not run multiple calls in paralel.
  *
  * @param task Function to execute off the main thread, or object url pointing to worker script
- * @param context Worker context, properties of this object are available inside the worker
  * @param config Worker configuration
  */
 export const serial = <T extends Array<unknown>, C extends IWorkerContext, R>(
@@ -117,7 +113,7 @@ export const serial = <T extends Array<unknown>, C extends IWorkerContext, R>(
 ): IWorker<T, C, R> => {
   const url = typeof task === "string" ? task : createWorkerUrl(task, config);
   const worker = new Worker(url);
-  const getTransferable = config.inTransferable || noop;
+  const getTransferable = config.inTransferable ?? noop;
   let syncId = 0;
 
   const run = ((args: T) => {
@@ -138,6 +134,6 @@ export const serial = <T extends Array<unknown>, C extends IWorkerContext, R>(
   return {
     clone,
     kill,
-    run
+    run,
   };
 };

@@ -1,2 +1,3 @@
 export { concurrent, serial } from "./task";
-export * from './types';
+export { pool } from "./pool";
+export * from "./types";

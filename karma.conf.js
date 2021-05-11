@@ -1,7 +1,7 @@
 // Karma configuration
 // Generated on Mon Feb 19 2018 09:16:45 GMT+0100 (W. Europe Standard Time)
 
-module.exports = function(config) {
+module.exports = function (config) {
   config.set({
     // base path that will be used to resolve all patterns (eg. files, exclude)
     basePath: "",
@@ -14,46 +14,46 @@ module.exports = function(config) {
       tsconfig: "./tsconfig.test.json",
       reports: {
         html: {
-          combineBrowserReports: true
-        }
-      }
+          combineBrowserReports: true,
+        },
+      },
+      coverageOptions: {
+        exclude: [/\.(d|spec|test)\.ts$/i, /^src\/worker\.ts$/i],
+      },
     },
 
     // list of files / patterns to load in the browser
     files: [
       "spec/**/*.ts",
       "src/**/*.ts",
-      { pattern: "spec/js/*.js", included: false, served: true }
+      { pattern: "spec/js/*.js", included: false, served: true },
     ],
 
     // list of files / patterns to exclude
     exclude: [],
 
     proxies: {
-      "/js/": "/base/spec/js/"
+      "/js/": "/base/spec/js/",
     },
 
     // preprocess matching files before serving them to the browser
     // available preprocessors: https://npmjs.org/browse/keyword/karma-preprocessor
     preprocessors: {
-      "src/**/!(worker).ts": ["coverage"],
-      "src/**/*.ts": ["karma-typescript"],
-      "!spec/**/*.*": ["coverage"],
-      "spec/**/*.ts": ["karma-typescript"]
+      "**/*.ts": ["karma-typescript"],
     },
 
     // test results reporter to use
     // possible values: 'dots', 'progress'
     // available reporters: https://npmjs.org/browse/keyword/karma-reporter
-    reporters: ["progress", "coverage", "karma-typescript"],
+    reporters: ["progress", "karma-typescript"],
 
     coverageReporter: {
       type: "lcov", // lcov or lcovonly are required for generating lcov.info files
-      dir: "coverage/"
+      dir: "coverage/",
     },
 
     coveragePreprocessor: {
-      exclude: ["spec"]
+      exclude: ["spec"],
     },
 
     // web server port
@@ -79,6 +79,6 @@ module.exports = function(config) {
 
     // Concurrency level
     // how many browser should be started simultaneous
-    concurrency: Infinity
+    concurrency: Infinity,
   });
 };
