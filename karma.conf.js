@@ -17,6 +17,9 @@ module.exports = function (config) {
           combineBrowserReports: true,
         },
       },
+      coverageOptions: {
+        exclude: [/\.(d|spec|test)\.ts$/i, /^src\/worker\.ts$/i],
+      },
     },
 
     // list of files / patterns to load in the browser
@@ -36,15 +39,13 @@ module.exports = function (config) {
     // preprocess matching files before serving them to the browser
     // available preprocessors: https://npmjs.org/browse/keyword/karma-preprocessor
     preprocessors: {
-      "src/**/!(worker).ts": ["coverage"],
-      "src/**/*.ts": ["karma-typescript"],
-      "spec/**/*.ts": ["karma-typescript"],
+      "**/*.ts": ["karma-typescript"],
     },
 
     // test results reporter to use
     // possible values: 'dots', 'progress'
     // available reporters: https://npmjs.org/browse/keyword/karma-reporter
-    reporters: ["progress", "coverage", "karma-typescript"],
+    reporters: ["progress", "karma-typescript"],
 
     coverageReporter: {
       type: "lcov", // lcov or lcovonly are required for generating lcov.info files
