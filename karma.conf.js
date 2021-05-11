@@ -38,7 +38,6 @@ module.exports = function (config) {
     preprocessors: {
       "src/**/!(worker).ts": ["coverage"],
       "src/**/*.ts": ["karma-typescript"],
-      "!spec/**/*.*": ["coverage"],
       "spec/**/*.ts": ["karma-typescript"],
     },
 
