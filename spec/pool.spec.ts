@@ -71,7 +71,7 @@ describe("Pool", () => {
     worker
       .run([10, 10])
       .then(fail)
-      .catch((_) => {
+      .catch(() => {
         worker.kill();
         done();
       });

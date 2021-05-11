@@ -42,7 +42,7 @@ describe("Call chains", () => {
     const syncWorker = serial(sum);
     const asyncWorkerA = concurrent(delayedPromise);
     const asyncWorkerB = concurrent(transferrableFunc, {
-      inTransferable: ([_, arr]) => [arr.buffer],
+      inTransferable: ([, arr]) => [arr.buffer],
       outTransferable: (res) => [res.buffer],
     });
 
@@ -155,7 +155,7 @@ describe("Workers", () => {
 
       it("Works with transferables", async () => {
         const worker = workerType(transferrableFunc, {
-          inTransferable: ([_, arr]) => [arr.buffer],
+          inTransferable: ([, arr]) => [arr.buffer],
           outTransferable: (res) => [res.buffer],
         });
 

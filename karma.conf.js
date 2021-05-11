@@ -52,10 +52,6 @@ module.exports = function (config) {
       dir: "coverage/",
     },
 
-    coveragePreprocessor: {
-      exclude: ["spec"],
-    },
-
     // web server port
     port: 9876,
 
