@@ -26,13 +26,17 @@ const isUrlRelative = (url: string) => {
   return url.indexOf("://") === -1 && url.indexOf("//") === -1;
 };
 
-const getScriptImport = (scripts?: string[], rootUrl = "") =>
+const getScriptPath = (url: string) => {
+  if (isUrlRelative(url)) {
+    return `'${location?.origin + url}'`;
+  }
+
+  return `'${url}'`;
+};
+
+const getScriptImport = (scripts?: string[]) =>
   scripts != null && scripts.length > 0
-    ? `importScripts(${scripts
-        .map((script) =>
-          isUrlRelative(script) ? `"${rootUrl}${script}"` : `"${script}"`
-        )
-        .join(",")});`
+    ? `importScripts(${scripts.map(getScriptPath).join(",")});`
     : "";
 
 const getScript = <T extends Array<unknown>, C extends IWorkerContext, R>(
@@ -41,10 +45,9 @@ const getScript = <T extends Array<unknown>, C extends IWorkerContext, R>(
   terminateOnCompletion: boolean
 ) =>
   `
-${getScriptImport(config.scripts, config.rootUrl)}
+${getScriptImport(config.scripts)}
 ${getContextString(config.context)}
 self.terminateOnCompletion = ${terminateOnCompletion};
-self.rootUrl = '${config.rootUrl}';
 self.getError = ${getError};
 self.getTransferrables = ${config.outTransferable ?? noop};
 self.run = ${execute};

@@ -19,7 +19,6 @@ const contextFunc = function (this: typeof context) {
   };
 };
 
-const rootUrl = "http://localhost:9876";
 const sumScript = "/js/sum.js";
 const lodashScript =
   "https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.11/lodash.core.min.js";
@@ -74,7 +73,7 @@ describe("Workers", () => {
         const result = await worker.run([1, 2]);
 
         expect(result).toBe(3);
-        return await worker.kill();
+        worker.kill();
       });
 
       it("Resolves a promise", async () => {
@@ -82,7 +81,7 @@ describe("Workers", () => {
         const result = await worker.run([5]);
 
         expect(result).toBe(5);
-        return await worker.kill();
+        worker.kill();
       });
 
       it("Can use a function as context", async () => {
@@ -98,7 +97,7 @@ describe("Workers", () => {
         const result = await worker.run([5]);
 
         expect(result).toBe(100);
-        return await worker.kill();
+        worker.kill();
       });
 
       it("Propagates thrown exception back to main thread", () => {
@@ -163,7 +162,7 @@ describe("Workers", () => {
         const result = await worker.run([5, inputArr]);
 
         expect(result).toEqual(new Float32Array([5, 10, 15, 20, 25]));
-        await worker.kill();
+        worker.kill();
       });
 
       it("Handles different context types", async () => {
@@ -172,7 +171,7 @@ describe("Workers", () => {
         const result = await worker.run();
         expect(result).toEqual(context);
 
-        await worker.kill();
+        worker.kill();
       });
 
       it("Can be cloned", async () => {
@@ -182,29 +181,29 @@ describe("Workers", () => {
         const result = await cloned.run();
         expect(result).toEqual(context);
 
-        await worker.kill();
-        await cloned.kill();
+        worker.kill();
+        cloned.kill();
       });
 
-      it("Loads a script from base url", async () => {
+      it("Loads a script from origin", async () => {
         const worker = workerType(
           (x: number) => {
             return sum(x, x);
           },
-          { rootUrl, scripts: [sumScript] }
+          { scripts: [sumScript] }
         );
 
         const result = await worker.run([5]);
         expect(result).toBe(10);
 
-        return await worker.kill();
+        worker.kill();
       });
 
       it("Loads an external script", async () => {
         let _: any;
 
         const worker = workerType(
-          (x: number) => {
+          (x: number): number[] => {
             return _.map([x], (n: number) => n ** n);
           },
           {
@@ -215,19 +214,18 @@ describe("Workers", () => {
         const result = await worker.run([5]);
         expect(result).toEqual([3125]);
 
-        return await worker.kill();
+        worker.kill();
       });
 
       it("Loads a mix of local and external scripts", async () => {
         let _: any;
 
         const worker = workerType(
-          (x: number) => {
+          (x: number): number[] => {
             const summed = sum(x, x);
             return _.map([summed], (n: number) => n ** n);
           },
           {
-            rootUrl,
             scripts: [sumScript, lodashScript],
           }
         );
@@ -235,7 +233,7 @@ describe("Workers", () => {
         const result = await worker.run([2]);
         expect(result).toEqual([256]);
 
-        return await worker.kill();
+        worker.kill();
       });
     });
   });

@@ -82,12 +82,11 @@ export const pool = <T extends Array<unknown>, C extends IWorkerContext, R>(
   const workerPool = new WorkerPool(task, config);
 
   const run = ((args: T) => {
-    return workerPool.get().then((worker) =>
-      worker.run(args).then((res) => {
-        workerPool.release(worker);
-        return res;
-      })
-    );
+    return workerPool
+      .get()
+      .then((worker) =>
+        worker.run(args).finally(() => workerPool.release(worker))
+      );
   }) as RunFunc<T, R>;
 
   const kill = () => {
