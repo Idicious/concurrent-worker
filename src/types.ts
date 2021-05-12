@@ -19,7 +19,6 @@ export interface IWorkerConfig<
   inTransferable?: (values: T) => Transferable[];
   context?: C;
   scripts?: string[];
-  rootUrl?: string;
 }
 
 export interface IPoolConfig<

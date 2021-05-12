@@ -19,7 +19,6 @@ const contextFunc = function (this: typeof context) {
   };
 };
 
-const rootUrl = "http://localhost:9876";
 const sumScript = "/js/sum.js";
 const lodashScript =
   "https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.11/lodash.core.min.js";
@@ -186,12 +185,12 @@ describe("Workers", () => {
         await cloned.kill();
       });
 
-      it("Loads a script from base url", async () => {
+      it("Loads a script from origin", async () => {
         const worker = workerType(
           (x: number) => {
             return sum(x, x);
           },
-          { rootUrl, scripts: [sumScript] }
+          { scripts: [sumScript] }
         );
 
         const result = await worker.run([5]);
@@ -227,7 +226,6 @@ describe("Workers", () => {
             return _.map([summed], (n: number) => n ** n);
           },
           {
-            rootUrl,
             scripts: [sumScript, lodashScript],
           }
         );
