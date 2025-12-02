@@ -1,32 +1,11 @@
-// rollup.config.js
-import ts from "rollup-plugin-typescript";
-import typescript from "typescript";
+import typescript from "@rollup/plugin-typescript";
+import { defineConfig } from "rollup";
 
-function getExtension(format) {
-  switch (format) {
-    case "umd":
-      return "js";
-    case "es":
-      return "es.js";
-    default:
-      return "js";
-  }
-}
-
-const format = process.env.format;
-const extension = getExtension(format);
-
-export default {
+export default defineConfig({
   input: "src/index.ts",
   output: {
-    file: `dist/index.${extension}`,
-    format,
-    name: "Task",
+    file: "dist/index.js",
+    format: "module",
   },
-  plugins: [
-    ts({
-      typescript,
-      emitDeclarationOnly: false,
-    }),
-  ],
-};
+  plugins: [typescript()],
+});
