@@ -1,3 +1,4 @@
+import { describe, expect, it } from "vitest";
 import * as API from "../src/index";
 
 describe("Public API", () => {

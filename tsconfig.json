@@ -1,16 +1,14 @@
 {
   "compilerOptions": {
-    "types": ["vitest/globals"],
     "emitDeclarationOnly": true,
     "target": "esnext",
     "module": "esnext",
     "lib": ["esnext", "webworker"],
     "declaration": true,
     "outDir": "./dist",
-    "rootDir": "./src",
     "removeComments": false,
     "importHelpers": true,
     "strict": true
   },
-  "include": ["src"]
+  "include": ["./src/**/*.ts"]
 }

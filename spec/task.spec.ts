@@ -1,3 +1,4 @@
+import { assert, describe, expect, it } from "vitest";
 import { pool } from "../src/pool";
 import { concurrent, serial } from "../src/task";
 
@@ -92,7 +93,7 @@ describe("Workers", () => {
           },
           {
             context: { sum, square },
-          }
+          },
         );
         const result = await worker.run([5]);
 
@@ -107,7 +108,7 @@ describe("Workers", () => {
 
         return worker
           .run()
-          .then(fail)
+          .then(() => assert.fail())
           .catch((error) => {
             expect(error.message).toBe("Test error");
             worker.kill();
@@ -119,7 +120,7 @@ describe("Workers", () => {
 
         return worker
           .run()
-          .then(fail)
+          .then(() => assert.fail())
           .catch((error) => {
             expect(error).toBe("Test error");
             worker.kill();
@@ -131,7 +132,7 @@ describe("Workers", () => {
 
         return worker
           .run()
-          .then(fail)
+          .then(() => assert.fail())
           .catch((error) => {
             expect(error).toBeDefined();
             worker.kill();
@@ -190,7 +191,7 @@ describe("Workers", () => {
           (x: number) => {
             return sum(x, x);
           },
-          { scripts: [sumScript] }
+          { scripts: [sumScript] },
         );
 
         const result = await worker.run([5]);
@@ -208,7 +209,7 @@ describe("Workers", () => {
           },
           {
             scripts: [lodashScript],
-          }
+          },
         );
 
         const result = await worker.run([5]);
@@ -227,7 +228,7 @@ describe("Workers", () => {
           },
           {
             scripts: [sumScript, lodashScript],
-          }
+          },
         );
 
         const result = await worker.run([2]);

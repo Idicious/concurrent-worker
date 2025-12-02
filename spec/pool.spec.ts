@@ -1,3 +1,4 @@
+import { assert, describe, expect, it } from "vitest";
 import { pool } from "../src/pool";
 
 const delay = <T>(ms: number, val: T) =>
@@ -67,13 +68,13 @@ describe("Pool", () => {
     // Timeout is set shorter than first worker run time, second will timeout before starting
     const worker = pool(delay, { workers: 1, timeout: 30 });
 
-    worker.run([100, 1]).catch(fail);
+    worker.run([100, 1]).catch(() => assert.fail());
     worker
       .run([10, 10])
-      .then(fail)
+      .then(() => assert.fail())
       .catch(() => {
         worker.kill();
-        done();
+        assert.ok(true);
       });
   });
 });
