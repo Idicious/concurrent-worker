@@ -3,13 +3,10 @@ import { playwright } from "@vitest/browser-playwright";
 
 export default defineConfig({
   test: {
-    typecheck: {
-      tsconfig: "./tsconfig.test.json",
-    },
-    include: ["spec/**/*.spec.ts"],
     globals: true,
     browser: {
       enabled: true,
+      headless: true,
       provider: playwright(),
       instances: [{ browser: "chromium" }],
     },

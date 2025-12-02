@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "emitDeclarationOnly": true,
     "target": "esnext",
     "module": "esnext",
     "lib": ["esnext", "webworker"],
