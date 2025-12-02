@@ -1,3 +1,4 @@
+import { assert, describe, expect, it } from "vitest";
 import { pool } from "../src/pool";
 import { concurrent, serial } from "../src/task";
 
@@ -8,6 +9,10 @@ const context = {
   d: {
     deep: "a",
   },
+  e: ["1", 2, 3],
+  g: /^test-regex$/g,
+  h: undefined,
+  i: null,
 };
 
 const contextFunc = function (this: typeof context) {
@@ -16,12 +21,16 @@ const contextFunc = function (this: typeof context) {
     b: this.b,
     c: this.c,
     d: this.d,
+    e: this.e,
+    g: this.g,
+    h: this.h,
+    i: this.i,
   };
 };
 
 const sumScript = "/js/sum.js";
 const lodashScript =
-  "https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.11/lodash.core.min.js";
+  "//cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.11/lodash.core.min.js";
 
 const square = (x: number) => x * x;
 const sum = (x: number, y: number) => x + y;
@@ -92,7 +101,7 @@ describe("Workers", () => {
           },
           {
             context: { sum, square },
-          }
+          },
         );
         const result = await worker.run([5]);
 
@@ -107,7 +116,7 @@ describe("Workers", () => {
 
         return worker
           .run()
-          .then(fail)
+          .then(() => assert.fail())
           .catch((error) => {
             expect(error.message).toBe("Test error");
             worker.kill();
@@ -115,13 +124,15 @@ describe("Workers", () => {
       });
 
       it("Propogates promise rejection back to main thread", () => {
-        const worker = workerType(() => Promise.reject("Test error"));
+        const worker = workerType(() =>
+          Promise.reject(new Error("Test error")),
+        );
 
         return worker
           .run()
-          .then(fail)
+          .then(() => assert.fail())
           .catch((error) => {
-            expect(error).toBe("Test error");
+            expect(error.message).toBe("Test error");
             worker.kill();
           });
       });
@@ -131,7 +142,7 @@ describe("Workers", () => {
 
         return worker
           .run()
-          .then(fail)
+          .then(() => assert.fail())
           .catch((error) => {
             expect(error).toBeDefined();
             worker.kill();
@@ -190,7 +201,7 @@ describe("Workers", () => {
           (x: number) => {
             return sum(x, x);
           },
-          { scripts: [sumScript] }
+          { scripts: [sumScript] },
         );
 
         const result = await worker.run([5]);
@@ -208,7 +219,7 @@ describe("Workers", () => {
           },
           {
             scripts: [lodashScript],
-          }
+          },
         );
 
         const result = await worker.run([5]);
@@ -227,7 +238,7 @@ describe("Workers", () => {
           },
           {
             scripts: [sumScript, lodashScript],
-          }
+          },
         );
 
         const result = await worker.run([2]);

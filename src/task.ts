@@ -6,54 +6,15 @@ import {
   Reject,
   Resolve,
   RunFunc,
-  ThenArg,
   WorkerThis,
 } from "./types";
-import { noop } from "./worker";
-import { createWorkerUrl } from "./worker-creation";
-
-/**
- * Create a worker onmessage callback that resolves or rejects if the sync id matches.
- */
-const createWorkerCallback = <R>(
-  worker: Worker,
-  syncIdPing: number,
-  resolve: Resolve<R>,
-  reject: Reject
-) =>
-  function cb(message: IResponse<R>) {
-    const syncIdPong = message.data[0];
-    const dataOrError = message.data[1];
-    const hasError = message.data[2];
-
-    if (syncIdPing === syncIdPong) {
-      if (hasError) {
-        reject(dataOrError);
-      } else {
-        resolve(dataOrError);
-      }
-      worker.removeEventListener("message", cb);
-    }
-  };
-
-/**
- * Call worker with given arguments, returns a promise that resolves when onmessage is called
- * with matching syncId.
- */
-export const executePromiseWorker = <T extends Array<unknown>, R>(
-  worker: Worker,
-  syncId: number,
-  args: T,
-  transferrable: Transferable[] = []
-): Promise<ThenArg<R>> =>
-  new Promise<ThenArg<R>>((resolve, reject) => {
-    worker.addEventListener(
-      "message",
-      createWorkerCallback(worker, syncId, resolve, reject)
-    );
-
-    worker.postMessage([syncId, args], transferrable);
-  });
+import {
+  createWorkerUrl,
+  getScriptImport,
+  noop,
+  onMessage,
+  toSource,
+} from "./worker";
 
 /**
  * Creates a task that can be run in a webworker. If you want to use functions and variables from
@@ -66,20 +27,45 @@ export const executePromiseWorker = <T extends Array<unknown>, R>(
 export const concurrent = <
   T extends Array<unknown>,
   C extends IWorkerContext,
-  R
+  R,
 >(
   task: ((this: WorkerThis<C>, ...args: T) => R) | string,
-  config: IWorkerConfig<T, C, R> = {}
+  config: IWorkerConfig<T, C, R> = {},
 ): IWorker<T, C, R> => {
   const url =
-    typeof task === "string" ? task : createWorkerUrl(task, config, true);
+    typeof task === "string"
+      ? task
+      : createWorkerUrl(
+          task,
+          config,
+          getScriptImport,
+          toSource,
+          noop,
+          onMessage,
+        );
   const getTransferable = config.inTransferable ?? noop;
 
   const run = ((args: T) => {
-    const worker = new Worker(url);
-    const transferable = getTransferable(args);
+    return new Promise<Awaited<R>>((resolve, reject) => {
+      const worker = new Worker(url);
+      worker.addEventListener(
+        "message",
+        (msg: IResponse<R>) => {
+          const [_, dataOrError, hasError] = msg.data;
 
-    return executePromiseWorker<T, R>(worker, -1, args, transferable);
+          if (hasError) {
+            reject(dataOrError);
+          } else {
+            resolve(dataOrError);
+          }
+
+          worker.terminate();
+        },
+        { once: true },
+      );
+
+      worker.postMessage([0, args], getTransferable(args));
+    });
   }) as RunFunc<T, R>;
 
   const kill = () => {
@@ -109,16 +95,51 @@ export const concurrent = <
  */
 export const serial = <T extends Array<unknown>, C extends IWorkerContext, R>(
   task: ((this: WorkerThis<C>, ...args: T) => R) | string,
-  config: IWorkerConfig<T, C, R> = {}
+  config: IWorkerConfig<T, C, R> = {},
 ): IWorker<T, C, R> => {
-  const url = typeof task === "string" ? task : createWorkerUrl(task, config);
+  const url =
+    typeof task === "string"
+      ? task
+      : createWorkerUrl(
+          task,
+          config,
+          getScriptImport,
+          toSource,
+          noop,
+          onMessage,
+        );
   const worker = new Worker(url);
   const getTransferable = config.inTransferable ?? noop;
+  const resolverMap = new Map<
+    number,
+    { resolve: Resolve<R>; reject: Reject }
+  >();
+
+  worker.addEventListener("message", (message: IResponse<R>) => {
+    const [syncId, dataOrError, hasError] = message.data;
+
+    const resolver = resolverMap.get(syncId);
+    if (resolver == null) return;
+    resolverMap.delete(syncId);
+
+    if (hasError) {
+      resolver.reject(dataOrError);
+    } else {
+      resolver.resolve(dataOrError);
+    }
+  });
+
   let syncId = 0;
 
   const run = ((args: T) => {
+    const syncIdLocal = syncId++;
+
     const transferable = getTransferable(args);
-    return executePromiseWorker<T, R>(worker, syncId++, args, transferable);
+    worker.postMessage([syncIdLocal, args], transferable);
+
+    return new Promise<Awaited<R>>((resolve, reject) => {
+      resolverMap.set(syncIdLocal, { resolve, reject });
+    });
   }) as RunFunc<T, R>;
 
   const kill = () => {
