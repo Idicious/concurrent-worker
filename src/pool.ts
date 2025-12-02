@@ -6,7 +6,13 @@ import {
   RunFunc,
   WorkerThis,
 } from "./types";
-import { createWorkerUrl } from "./worker-creation";
+import {
+  createWorkerUrl,
+  getScriptImport,
+  noop,
+  onMessage,
+  toSource,
+} from "./worker";
 
 const defaultConcurrency = self?.navigator?.hardwareConcurrency ?? 4;
 const defaultTimeout = 1000 * 60;
@@ -28,7 +34,17 @@ class WorkerPool<T extends Array<unknown>, C extends IWorkerContext, R> {
     private task: ((this: WorkerThis<C>, ...args: T) => R) | string,
     private config: IPoolConfig<T, C, R> = {},
   ) {
-    const url = typeof task === "string" ? task : createWorkerUrl(task, config);
+    const url =
+      typeof task === "string"
+        ? task
+        : createWorkerUrl(
+            task,
+            config,
+            getScriptImport,
+            toSource,
+            noop,
+            onMessage,
+          );
     const workers = config?.workers ?? defaultConcurrency;
     for (let i = 0; i < workers; i++) {
       this.workers.push(serial(url, config));

@@ -1,4 +1,4 @@
-import { IWorkerContext } from "./types";
+import type { IWorkerConfig, IWorkerContext } from "./types";
 
 declare global {
   interface WorkerGlobalScope {
@@ -8,6 +8,14 @@ declare global {
     getScriptImport(scripts?: string[]): string;
     toSource(value: unknown): string;
     noop(): never[];
+    createWorkerUrl<T extends Array<unknown>, C extends IWorkerContext, R>(
+      execute: (...args: T) => R,
+      config: IWorkerConfig<T, C, R>,
+      getScriptImportFn: typeof getScriptImport,
+      toSourceFn: typeof toSource,
+      noopFn: typeof noop,
+      onMessageFn: typeof onMessage,
+    ): string;
     onMessage(message: MessageEvent<[syncId: number, args: unknown[]]>): void;
   }
 }
@@ -76,4 +84,33 @@ export const onMessage = (
     .catch((error) => {
       postMessage([message.data[0], error, true]);
     });
+};
+
+export const createWorkerUrl = <
+  T extends Array<unknown>,
+  C extends IWorkerContext,
+  R,
+>(
+  execute: (...args: T) => R,
+  config: IWorkerConfig<T, C, R>,
+  getScriptImportFn: typeof getScriptImport,
+  toSourceFn: typeof toSource,
+  noopFn: typeof noop,
+  onMessageFn: typeof onMessage,
+): string => {
+  const script = [
+    getScriptImportFn(config.scripts),
+    `self.context = ${toSourceFn(config.context)};`,
+    `self.getTransferrable = ${config.outTransferable ?? noopFn}`,
+    `self.run = ${execute}`,
+    `self.addEventListener("message", ${onMessageFn})`,
+    `self.onMessage = ${onMessageFn}`,
+    `self.toSource = ${toSourceFn}`,
+    `self.noop = ${noopFn}`,
+    `self.getScriptImport = ${getScriptImportFn}`,
+    `self.createWorkerUrl = ${createWorkerUrl}`,
+  ].join("\r\n");
+
+  const blob = new Blob([script], { type: "application/javascript" });
+  return URL.createObjectURL(blob);
 };
