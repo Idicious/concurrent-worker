@@ -6,7 +6,6 @@ import {
   Reject,
   Resolve,
   RunFunc,
-  ThenArg,
   WorkerThis,
 } from "./types";
 import { noop } from "./worker";
@@ -19,7 +18,7 @@ const createWorkerCallback = <R>(
   worker: Worker,
   syncIdPing: number,
   resolve: Resolve<R>,
-  reject: Reject
+  reject: Reject,
 ) =>
   function cb(message: IResponse<R>) {
     const syncIdPong = message.data[0];
@@ -44,12 +43,12 @@ export const executePromiseWorker = <T extends Array<unknown>, R>(
   worker: Worker,
   syncId: number,
   args: T,
-  transferrable: Transferable[] = []
-): Promise<ThenArg<R>> =>
-  new Promise<ThenArg<R>>((resolve, reject) => {
+  transferrable: Transferable[] = [],
+): Promise<Awaited<R>> =>
+  new Promise<Awaited<R>>((resolve, reject) => {
     worker.addEventListener(
       "message",
-      createWorkerCallback(worker, syncId, resolve, reject)
+      createWorkerCallback(worker, syncId, resolve, reject),
     );
 
     worker.postMessage([syncId, args], transferrable);
@@ -66,20 +65,21 @@ export const executePromiseWorker = <T extends Array<unknown>, R>(
 export const concurrent = <
   T extends Array<unknown>,
   C extends IWorkerContext,
-  R
+  R,
 >(
   task: ((this: WorkerThis<C>, ...args: T) => R) | string,
-  config: IWorkerConfig<T, C, R> = {}
+  config: IWorkerConfig<T, C, R> = {},
 ): IWorker<T, C, R> => {
-  const url =
-    typeof task === "string" ? task : createWorkerUrl(task, config, true);
+  const url = typeof task === "string" ? task : createWorkerUrl(task, config);
   const getTransferable = config.inTransferable ?? noop;
 
   const run = ((args: T) => {
     const worker = new Worker(url);
     const transferable = getTransferable(args);
 
-    return executePromiseWorker<T, R>(worker, -1, args, transferable);
+    return executePromiseWorker<T, R>(worker, -1, args, transferable).finally(
+      () => worker.terminate(),
+    );
   }) as RunFunc<T, R>;
 
   const kill = () => {
@@ -109,7 +109,7 @@ export const concurrent = <
  */
 export const serial = <T extends Array<unknown>, C extends IWorkerContext, R>(
   task: ((this: WorkerThis<C>, ...args: T) => R) | string,
-  config: IWorkerConfig<T, C, R> = {}
+  config: IWorkerConfig<T, C, R> = {},
 ): IWorker<T, C, R> => {
   const url = typeof task === "string" ? task : createWorkerUrl(task, config);
   const worker = new Worker(url);

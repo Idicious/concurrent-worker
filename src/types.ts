@@ -1,9 +1,5 @@
-export interface Input<T extends Array<unknown>> {
-  data: [number, T];
-}
-
 export interface IResponse<R> {
-  data: [number, ThenArg<R>, boolean];
+  data: [number, Awaited<R>, boolean];
 }
 
 export interface IWorkerContext {
@@ -13,9 +9,9 @@ export interface IWorkerContext {
 export interface IWorkerConfig<
   T extends Array<unknown>,
   C extends IWorkerContext,
-  R
+  R,
 > {
-  outTransferable?: (value: ThenArg<R>) => Transferable[];
+  outTransferable?: (value: Awaited<R>) => Transferable[];
   inTransferable?: (values: T) => Transferable[];
   context?: C;
   scripts?: string[];
@@ -24,7 +20,7 @@ export interface IWorkerConfig<
 export interface IPoolConfig<
   T extends Array<unknown>,
   C extends IWorkerContext,
-  R
+  R,
 > extends IWorkerConfig<T, C, R> {
   workers?: number;
   timeout?: number;
@@ -40,21 +36,16 @@ export type WorkerThis<C extends IWorkerContext> = C & { rootUrl: string };
 
 export type EmptyArray<T extends Array<unknown>> = T & { length: 0 };
 
-export type UnknownFunc<T extends Array<unknown>, R> = T extends EmptyArray<T>
-  ? () => R
-  : (args: T) => R;
+export type UnknownFunc<T extends Array<unknown>, R> =
+  T extends EmptyArray<T> ? () => R : (args: T) => R;
 
 export type RunFunc<T extends Array<unknown>, R> = UnknownFunc<
   T,
   ThenPromise<R>
 >;
 
-export type Resolve<T> = (val: ThenArg<T> | PromiseLike<ThenArg<T>>) => void;
+export type Resolve<T> = (val: Awaited<T> | PromiseLike<Awaited<T>>) => void;
 
 export type Reject = (error: unknown) => void;
 
-// AWSOME CONDITIONAL PROMISE TYPE UNWRAPPING
-// TAKEN FROM https://stackoverflow.com/questions/48011353/how-to-unwrap-type-of-a-promise
-export type ThenArg<T> = T extends Promise<infer U> ? ThenArg<U> : T;
-
-export type ThenPromise<T> = Promise<ThenArg<T>>;
+export type ThenPromise<T> = Promise<Awaited<T>>;

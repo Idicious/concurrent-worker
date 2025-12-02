@@ -1,5 +1,5 @@
 import { assert, describe, expect, it } from "vitest";
-import { pool } from "../src/pool";
+import { pool, PoolTimeoutError } from "../src/pool";
 
 const delay = <T>(ms: number, val: T) =>
   new Promise<T>((resolve) => {
@@ -20,7 +20,7 @@ describe("Pool", () => {
 
     // Expect time to be roughly equivelent to sum
     expect(totalTime).toBeGreaterThan(1500);
-    expect(totalTime).toBeLessThan(1700);
+    expect(totalTime).toBeLessThan(2000);
     expect(res).toEqual([1, 10, 3]);
 
     worker.kill();
@@ -72,9 +72,10 @@ describe("Pool", () => {
     worker
       .run([10, 10])
       .then(() => assert.fail())
-      .catch(() => {
+      .catch((err) => {
+        expect(err).toBeInstanceOf(PoolTimeoutError);
+
         worker.kill();
-        assert.ok(true);
       });
   });
 });

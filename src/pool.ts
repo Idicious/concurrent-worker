@@ -11,6 +11,13 @@ import { createWorkerUrl } from "./worker-creation";
 const defaultConcurrency = self?.navigator?.hardwareConcurrency ?? 4;
 const defaultTimeout = 1000 * 60;
 
+export class PoolTimeoutError extends Error {
+  constructor(public readonly timeout: number) {
+    super(`No workers available, timeout exceeded.`);
+    this.name = "PoolTimeoutError";
+  }
+}
+
 class WorkerPool<T extends Array<unknown>, C extends IWorkerContext, R> {
   private workers: Array<IWorker<T, C, R>> = [];
   private busy: Array<IWorker<T, C, R>> = [];
@@ -19,7 +26,7 @@ class WorkerPool<T extends Array<unknown>, C extends IWorkerContext, R> {
 
   constructor(
     private task: ((this: WorkerThis<C>, ...args: T) => R) | string,
-    private config: IPoolConfig<T, C, R> = {}
+    private config: IPoolConfig<T, C, R> = {},
   ) {
     const url = typeof task === "string" ? task : createWorkerUrl(task, config);
     const workers = config?.workers ?? defaultConcurrency;
@@ -43,7 +50,7 @@ class WorkerPool<T extends Array<unknown>, C extends IWorkerContext, R> {
           this.waiting.splice(index, 1);
         }
 
-        reject(`No workers available, timeout of ${timeout}ms exceeded.`);
+        reject(new PoolTimeoutError(timeout));
       }, timeout);
 
       const cb = (w: IWorker<T, C, R>) => {
@@ -77,7 +84,7 @@ class WorkerPool<T extends Array<unknown>, C extends IWorkerContext, R> {
 
 export const pool = <T extends Array<unknown>, C extends IWorkerContext, R>(
   task: ((this: WorkerThis<C>, ...args: T) => R) | string,
-  config: IPoolConfig<T, C, R> = {}
+  config: IPoolConfig<T, C, R> = {},
 ): IWorker<T, C, R> => {
   const workerPool = new WorkerPool(task, config);
 
@@ -85,7 +92,7 @@ export const pool = <T extends Array<unknown>, C extends IWorkerContext, R>(
     return workerPool
       .get()
       .then((worker) =>
-        worker.run(args).finally(() => workerPool.release(worker))
+        worker.run(args).finally(() => workerPool.release(worker)),
       );
   }) as RunFunc<T, R>;
 

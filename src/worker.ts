@@ -1,15 +1,59 @@
-import { Input } from "./types";
+import { IWorkerContext } from "./types";
 
 declare global {
   interface WorkerGlobalScope {
-    terminateOnCompletion: boolean;
     run<T extends Array<unknown>, R>(...args: T): R;
-    getTransferrables<T>(val: T): Transferable[];
-    getError(e: unknown): Record<string, unknown> | string;
+    context: IWorkerContext;
+    getTransferrable<T>(val: T): Transferable[];
+    getScriptImport(scripts?: string[]): string;
+    toSource(value: unknown): string;
+    noop(): never[];
+    onMessage(message: MessageEvent<[syncId: number, args: unknown[]]>): void;
   }
 }
 
 export const noop = (): never[] => [];
+
+export const getScriptImport = (scripts: string[] = []): string =>
+  `importScripts(${scripts.map((s) => `"${new URL(s, location.origin)}"`).join(",")});`;
+
+export function toSource(value: unknown): string {
+  if (value === null) return "null";
+
+  const t = typeof value;
+
+  if (t === "undefined") {
+    return "undefined";
+  }
+
+  if (t === "number" || t === "boolean") {
+    return String(value);
+  }
+
+  if (t === "string") {
+    return JSON.stringify(value);
+  }
+
+  if (t === "function") {
+    return value!.toString();
+  }
+
+  if (value instanceof RegExp) {
+    return value.toString();
+  }
+
+  if (Array.isArray(value)) {
+    return `[${value.map(toSource).join(", ")}]`;
+  }
+
+  if (t === "object") {
+    return `{${Object.entries(value!)
+      .map(([k, v]) => `${JSON.stringify(k)}: ${toSource(v)}`)
+      .join(", ")}}`;
+  }
+
+  throw new Error("Unsupported type");
+}
 
 /**
  * Calling functions through strings makes sure that aggressive minification
@@ -19,41 +63,17 @@ export const noop = (): never[] => [];
  * Tested with Webpack dev and prod mode, Closure Compiler ADVANCED mode with ES3, ES5 and ES6 target.
  * @param message
  */
-export const onmessage = <T extends Array<unknown>, R>(
-  message: Input<T>
-): Promise<void> => {
-  return new Promise<R>((resolve) => {
-    resolve(self["run"].apply<null, T, R>(null, message.data[1]));
+export const onMessage = (
+  message: MessageEvent<[syncId: number, args: unknown[]]>,
+) => {
+  return new Promise((resolve) => {
+    resolve(self["run"].apply(self["context"], message.data[1]));
   })
     .then((result) => {
-      const transferrable = self["getTransferrables"]<R>(result);
+      const transferrable = self["getTransferrable"](result);
       postMessage([message.data[0], result, false], transferrable);
     })
-    .catch((e) => {
-      const error = self["getError"](e);
+    .catch((error) => {
       postMessage([message.data[0], error, true]);
-    })
-    .finally(() => {
-      if (self["terminateOnCompletion"]) {
-        close();
-      }
     });
-};
-
-export const getError = (
-  e?: string | Record<string, unknown>
-): Record<string, unknown> | string => {
-  if (typeof e === "string") {
-    return e;
-  }
-
-  if (typeof e === "object") {
-    const props = Object.getOwnPropertyNames(e);
-    return props.reduce((acc, prop) => {
-      acc[prop] = e[prop];
-      return acc;
-    }, {} as Record<string, unknown>);
-  }
-
-  return "Unknown error in Worker";
 };

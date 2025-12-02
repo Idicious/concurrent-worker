@@ -17,11 +17,9 @@ describe("Public API", () => {
       | API.IWorker<[], any, any>
       | API.IWorkerConfig<[], any, any>
       | API.IWorkerContext
-      | API.Input<[]>
       | API.Reject
       | API.Resolve<any>
       | API.RunFunc<[], any>
-      | API.ThenArg<any>
       | API.ThenPromise<any>
       | API.UnknownFunc<[], any>
       | API.WorkerThis<any> = {} as any;
